@@ -94,7 +94,9 @@ fi
 echo "Updating OpenEMR at $submodule_path from $remote_name/$branch_name"
 
 if [[ "$submodule_path" != "." ]]; then
-  git submodule update --init --recursive "$submodule_path"
+  # Keep this non-recursive: some upstream nested submodules are optional
+  # and may not always be accessible.
+  git submodule update --init "$submodule_path"
 fi
 
 git -C "$submodule_abs" fetch "$remote_name" "$branch_name"

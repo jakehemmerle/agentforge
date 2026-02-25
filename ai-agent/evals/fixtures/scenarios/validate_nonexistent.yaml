@@ -1,0 +1,10 @@
+# Scenario: Validate claim for a nonexistent encounter.
+
+name: validate_nonexistent
+description: >
+  Validate claim readiness for a patient/encounter that does not exist.
+  Agent calls validate_claim_ready_completeness which raises an error.
+
+tools:
+  validate_claim_ready_completeness:
+    _error: "No patient found with ID 999999"

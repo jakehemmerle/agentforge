@@ -1,0 +1,16 @@
+config:
+  gcp:project: openemr-agent-staging
+  gcp:region: us-central1
+  openemr-agent-staging:dbTier: db-f1-micro
+  openemr-agent-staging:vmName: openemr-staging-vm
+  openemr-agent-staging:vmZone: us-central1-a
+  openemr-agent-staging:vmMachineType: e2-standard-4
+  openemr-agent-staging:vmBootDiskGb: "50"
+  openemr-agent-staging:vmDataDiskGb: "100"
+  openemr-agent-staging:openemrImageTag: latest
+  openemr-agent-staging:aiAgentImageTag: latest
+  openemr-agent-staging:sshSourceRanges:
+    - 0.0.0.0/0
+  openemr-agent-staging:dbPassword:
+    secure: v1:uQbuTAFz1X5Vbf9p:4s90jBrR74s4WcljWN+4Oqq6BCoSV1Pb5MXzX511MzURlCJE6ZLNBW0i/Uy6Yw1Hp88ipp/xSTg=
+encryptionsalt: v1:P3oVJZbN4bo=:v1:V87rGDz1WnpAk5Be:JlU9teHIhGIbquBmq2rW4CqHJhWXWA==

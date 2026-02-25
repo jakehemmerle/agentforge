@@ -1,0 +1,3 @@
+[submodule "openemr"]
+	path = openemr
+	url = git@github.com:openemr/openemr.git

@@ -1,0 +1,8 @@
+# Scenario: Ambiguous query with no patient specified.
+
+name: ambiguous_patient_query
+description: >
+  User asks about "the patient's appointments" without specifying which
+  patient. Agent should ask for clarification rather than calling tools.
+
+tools: {}

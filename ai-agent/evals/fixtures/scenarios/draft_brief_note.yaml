@@ -1,0 +1,76 @@
+# Scenario: Draft a brief summary note for a known encounter.
+
+name: draft_brief_note
+description: >
+  Write a brief summary note for John Doe's encounter 900001. Agent calls
+  get_encounter_context then draft_encounter_note with note_type=brief.
+
+tools:
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900001
+        date: "2026-02-23 10:00:00"
+        reason: "Persistent cough for 3 days with low-grade fever"
+        provider:
+          name: ""
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Office Visit"
+
+      patient:
+        id: 90001
+        name: "John Doe"
+        dob: "1985-03-15"
+        sex: "Male"
+        mrn: "TEST001"
+
+      clinical_context:
+        active_problems: []
+        medications: []
+        allergies: []
+        vitals:
+          temp: "99.8"
+          bp: "128/82"
+          hr: "76"
+          rr: "16"
+          spo2: "98"
+          weight: "180"
+          height: "70"
+        existing_notes: []
+
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+
+      data_warnings: []
+
+  draft_encounter_note:
+    _default:
+      draft_note:
+        type: "brief"
+        content:
+          summary: >-
+            John Doe, 40M, presented for evaluation of persistent cough x3 days
+            with low-grade fever. Vitals notable for temp 99.8F, otherwise stable.
+            Assessed as acute URI. Plan: supportive care, follow up PRN.
+        full_text: >-
+          John Doe, 40M, presented for evaluation of persistent cough x3 days
+          with low-grade fever. Vitals notable for temp 99.8F, otherwise stable.
+          Assessed as acute URI. Plan: supportive care, follow up PRN.
+        encounter_id: 900001
+        patient_name: "John Doe"
+        generated_at: "2026-02-23T12:00:00+00:00"
+      warnings:
+        - "No active problems documented."
+        - "No medications documented."
+      data_warnings: []
+      disclaimer: "This is an AI-generated draft. Review and edit before saving."

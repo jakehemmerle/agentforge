@@ -1,0 +1,11 @@
+ai-agent/
+docker/
+tests/
+.git/
+.github/
+.beads/
+.claude/
+node_modules/
+infra/
+*.md
+.pre-commit-config.yaml

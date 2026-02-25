@@ -1,0 +1,33 @@
+# Claim validation rules — extracted from validate_claim_completeness.py
+
+# Required patient demographic fields for claim submission.
+# Keys are OpenEMR field names; values are human-readable labels.
+required_demographics:
+  fname: "first name"
+  lname: "last name"
+  DOB: "date of birth"
+  sex: "sex"
+  street: "street address"
+  city: "city"
+  state: "state"
+  postal_code: "zip code"
+
+# Accepted code types for diagnosis codes (ICD).
+accepted_diagnosis_code_types:
+  - "ICD10"
+  - "ICD-10-CM"
+
+# Accepted code types for procedure codes (CPT/HCPCS).
+accepted_procedure_code_types:
+  - "CPT4"
+  - "HCPCS"
+
+# Severity level for each validation check.
+check_severities:
+  diagnosis_codes: "error"
+  procedure_codes: "error"
+  fees: "warning"
+  rendering_provider: "error"
+  billing_facility: "error"
+  patient_demographics: "error"
+  insurance: "warning"

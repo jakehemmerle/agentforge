@@ -1,0 +1,141 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'ai-agent/**'
+      - 'interface/main/tabs/**'
+      - 'Dockerfile'
+      - 'docker-entrypoint.sh'
+      - 'infra/**'
+      - '.github/workflows/deploy-staging.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GCP_PROJECT: openemr-agent-staging
+  GCP_REGION: us-central1
+  REGISTRY: us-central1-docker.pkg.dev/openemr-agent-staging/openemr
+  PULUMI_STACK: staging
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate engineering contract
+        run: python ai-agent/scripts/validate_engineering_contract.py
+
+  build-openemr:
+    runs-on: ubuntu-24.04
+    needs: [contract]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+      - name: Build and push OpenEMR image
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/openemr:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/openemr:latest \
+            .
+          docker push ${{ env.REGISTRY }}/openemr --all-tags
+
+  build-agent:
+    runs-on: ubuntu-24.04
+    needs: [contract]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+      - name: Build and push AI Agent image
+        working-directory: ai-agent
+        run: |
+          docker build \
+            -t ${{ env.REGISTRY }}/ai-agent:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/ai-agent:latest \
+            .
+          docker push ${{ env.REGISTRY }}/ai-agent --all-tags
+
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: [build-openemr, build-agent]
+    outputs:
+      openemr_ip: ${{ steps.stack.outputs.openemr_ip }}
+      vm_name: ${{ steps.stack.outputs.vm_name }}
+      vm_zone: ${{ steps.stack.outputs.vm_zone }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pulumi
+        uses: pulumi/actions@v6
+      - name: Deploy infrastructure
+        id: stack
+        working-directory: infra
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        run: |
+          pip install -r requirements.txt
+
+          pulumi stack select ${{ env.PULUMI_STACK }}
+          pulumi config set openemr-agent-staging:openemrImageTag ${{ github.sha }} --stack ${{ env.PULUMI_STACK }}
+          pulumi config set openemr-agent-staging:aiAgentImageTag ${{ github.sha }} --stack ${{ env.PULUMI_STACK }}
+
+          pulumi up --stack ${{ env.PULUMI_STACK }} --yes
+
+          echo "openemr_ip=$(pulumi stack output openemr_ip --stack ${{ env.PULUMI_STACK }})" >> "$GITHUB_OUTPUT"
+          echo "vm_name=$(pulumi stack output vm_name --stack ${{ env.PULUMI_STACK }})" >> "$GITHUB_OUTPUT"
+          echo "vm_zone=$(pulumi stack output vm_zone --stack ${{ env.PULUMI_STACK }})" >> "$GITHUB_OUTPUT"
+      - name: Reboot VM to apply startup deployment
+        run: |
+          gcloud compute instances reset "${{ steps.stack.outputs.vm_name }}" \
+            --zone "${{ steps.stack.outputs.vm_zone }}" \
+            --project "${{ env.GCP_PROJECT }}"
+
+  verify:
+    runs-on: ubuntu-24.04
+    needs: [deploy]
+    steps:
+      - name: Health checks
+        run: |
+          OPENEMR_URL="http://${{ needs.deploy.outputs.openemr_ip }}"
+          AGENT_URL="$OPENEMR_URL/agent"
+          AGENT_HEALTH_URL="$OPENEMR_URL/agent/health"
+
+          echo "OpenEMR URL: $OPENEMR_URL"
+          echo "AI Agent URL: $AGENT_URL"
+          echo "AI Agent Health URL: $AGENT_HEALTH_URL"
+
+          for attempt in $(seq 1 90); do
+            if curl -sf "$OPENEMR_URL/meta/health/readyz" >/dev/null && \
+               curl -sf "$AGENT_HEALTH_URL" >/dev/null; then
+              echo "Health checks passed"
+              exit 0
+            fi
+
+            echo "Waiting for services (attempt $attempt/90)..."
+            sleep 10
+          done
+
+          echo "Services failed health checks in time" >&2
+          exit 1

@@ -1,0 +1,13 @@
+diff --git a/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php b/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php
+index 454e81777..2f0fc9b5f 100644
+--- a/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php
++++ b/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php
+@@ -89,7 +89,7 @@ class UserRepository implements UserRepositoryInterface, IdentityProviderInterfa
+      */
+     protected function getAccountByPassword(UserEntity $user, $userrole, $username, $password, $email = ''): bool
+     {
+-        if (($userrole == UuidUserAccount::USER_ROLE_USERS) && (($GLOBALS['oauth_password_grant'] == 1) || ($GLOBALS['oauth_password_grant'] == 3))) {
++        if (($userrole == UuidUserAccount::USER_ROLE_USERS || $userrole == UuidUserAccount::USER_ROLE_SYSTEM) && (($GLOBALS['oauth_password_grant'] == 1) || ($GLOBALS['oauth_password_grant'] == 3))) { // Added USER_ROLE_SYSTEM for AI agent password grant
+             $auth = new AuthUtils('api');
+             if ($auth->confirmPassword($username, $password)) {
+                 $id = $auth->getUserId();

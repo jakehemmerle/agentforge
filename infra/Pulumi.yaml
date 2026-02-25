@@ -1,0 +1,6 @@
+name: openemr-agent-staging
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: OpenEMR AI Agent staging infrastructure on GCP

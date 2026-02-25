@@ -1,0 +1,10 @@
+# Scenario: Get context for a nonexistent encounter.
+
+name: nonexistent_encounter
+description: >
+  Request clinical context for a patient/encounter that does not exist.
+  Agent calls get_encounter_context which raises an error.
+
+tools:
+  get_encounter_context:
+    _error: "No patient found with ID 999999"

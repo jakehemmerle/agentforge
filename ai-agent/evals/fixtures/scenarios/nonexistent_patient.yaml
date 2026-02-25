@@ -1,0 +1,14 @@
+# Scenario: Search for a patient that does not exist.
+
+name: nonexistent_patient
+description: >
+  Search for a patient name that has no matches in the system.
+  Agent calls find_appointments and reports no patients found,
+  without hallucinating appointment details.
+
+tools:
+  find_appointments:
+    _default:
+      appointments: []
+      total_count: 0
+      message: "No patients found matching 'Bartholomew Quuxington III'."

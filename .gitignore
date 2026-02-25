@@ -1,0 +1,5 @@
+# Preserve legacy fork workspace
+openemr-legacy/
+
+# macOS metadata
+.DS_Store

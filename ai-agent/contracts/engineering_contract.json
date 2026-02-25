@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "description": "Executable contract for ai-agent + infra + docs consistency.",
+  "files": {
+    "ai_agent_readme": "ai-agent/README.md",
+    "deployment_doc": "ai-agent/docs/deployment.md",
+    "infra_program": "infra/__main__.py",
+    "deploy_workflow": ".github/workflows/deploy-staging.yml",
+    "infra_preview_workflow": ".github/workflows/infra-preview.yml",
+    "contract_workflow": ".github/workflows/engineering-contract.yml"
+  },
+  "deployment": {
+    "platform": "compute_engine",
+    "health_paths": [
+      "/meta/health/readyz",
+      "/agent/health"
+    ],
+    "required_secret_names": [
+      "ANTHROPIC_API_KEY",
+      "LANGSMITH_API_KEY",
+      "AI_AGENT_API_KEY",
+      "OPENEMR_CLIENT_ID",
+      "OPENEMR_CLIENT_SECRET"
+    ]
+  },
+  "docs": {
+    "readme_required_phrases": [
+      "docs/deployment.md",
+      "Compute Engine"
+    ],
+    "readme_forbidden_phrases": [
+      "Cloud Run deployment guide"
+    ],
+    "deployment_required_phrases": [
+      "Compute Engine",
+      "Cloud SQL (MySQL 8.0)",
+      "/meta/health/readyz",
+      "/agent/health"
+    ]
+  },
+  "workflow_commands": {
+    "deploy_workflow": "python ai-agent/scripts/validate_engineering_contract.py",
+    "infra_preview_workflow": "python ai-agent/scripts/validate_engineering_contract.py",
+    "contract_workflow": "python ai-agent/scripts/validate_engineering_contract.py"
+  }
+}

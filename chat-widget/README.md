@@ -50,6 +50,44 @@ Reset OpenEMR submodule to pristine state:
 npm run clean
 ```
 
+## Development
+
+Local development uses Docker (via the `/dev-setup` skill) for the full
+OpenEMR + AI Agent stack, and a file watcher for fast widget iteration.
+
+### First-time setup
+
+1. **Start the local environment** — from the repo root, run the
+   `/dev-setup up` skill. This brings up OpenEMR, MySQL, and the
+   AI Agent service. It also cleans the submodule and runs
+   `openemr-customize.sh apply` + `npm run inject`, so patches and
+   widget files are already in place when it finishes.
+
+2. **Start the file watcher**:
+
+   ```bash
+   npm run dev
+   ```
+
+   This does an initial copy of `src/ai-chat-widget.js` and
+   `src/ai-chat-widget.css` into the submodule, then watches `src/` for
+   changes and re-copies automatically.
+
+3. **Open the app** — navigate to `http://localhost:8300`, log in
+   (admin / pass), and the blue chat button should appear in the
+   bottom-right corner.
+
+### Edit → refresh loop
+
+With `npm run dev` running, any change you save in `src/` is copied into
+the OpenEMR submodule within ~100 ms. Just refresh the browser to pick
+up the new code — no rebuild or re-inject needed.
+
+### Stopping
+
+Stop the watcher with Ctrl-C. Stop the local environment with
+`/dev-setup down`.
+
 ## OpenEMR Build Pipeline (why integration tests need a full install)
 
 The chat widget itself has no build step — it's plain JS/CSS copied into the

@@ -77,11 +77,23 @@ OpenEMR + AI Agent stack, and a file watcher for fast widget iteration.
    (admin / pass), and the blue chat button should appear in the
    bottom-right corner.
 
-### Edit → refresh loop
+### Hot-reload (no page refresh)
 
-With `npm run dev` running, any change you save in `src/` is copied into
-the OpenEMR submodule within ~100 ms. Just refresh the browser to pick
-up the new code — no rebuild or re-inject needed.
+With `npm run dev` running, changes auto-apply without a page refresh:
+
+- **CSS changes** swap the stylesheet in-place (~1.5s). No DOM rebuild,
+  no lost chat state.
+- **JS changes** save widget state (messages, open/closed) to
+  `sessionStorage`, tear down the widget, and re-execute the script.
+  Chat history and panel state are restored automatically.
+
+The dev server on port 8351 serves a `/version` endpoint. The
+`dev-reload.js` client (loaded only when the `AI_CHAT_DEV_RELOAD` env
+var is set) polls it every 1.5s. Console shows `[dev-reload] connected`,
+`[dev-reload] CSS reloaded`, `[dev-reload] JS reloaded` as appropriate.
+
+If the dev server is not running, the client silently falls back to
+manual refresh.
 
 ### Stopping
 
@@ -116,3 +128,4 @@ zip archives on first run.
 |--------|-------------------------------|
 | `src/ai-chat-widget.js` | `interface/main/tabs/js/ai-chat-widget.js` |
 | `src/ai-chat-widget.css` | `interface/main/tabs/css/ai-chat-widget.css` |
+| `src/dev-reload.js` | `interface/main/tabs/js/dev-reload.js` |

@@ -1,11 +1,11 @@
 diff --git a/interface/main/tabs/main.php b/interface/main/tabs/main.php
-index 40834f2cf..923a74de2 100644
+index 40834f2cf..923a74de3 100644
 --- a/interface/main/tabs/main.php
 +++ b/interface/main/tabs/main.php
-@@ -353,6 +353,14 @@ $twig = (new TwigContainer(null, OEGlobalsBag::getInstance()->getKernel()))->get
+@@ -353,6 +353,18 @@ $twig = (new TwigContainer(null, OEGlobalsBag::getInstance()->getKernel()))->get
      <script src="js/dialog_utils.js?v=<?php echo $v_js_includes; ?>"></script>
      <script src="js/shortcuts.js?v=<?php echo $v_js_includes; ?>"></script>
- 
+
 +    <!-- AI Chat Widget -->
 +    <link rel="stylesheet" href="css/ai-chat-widget.css?v=<?php echo $v_js_includes; ?>">
 +    <script>
@@ -13,6 +13,10 @@ index 40834f2cf..923a74de2 100644
 +        var aiAgentApiKey = <?php echo js_escape(getenv('AI_AGENT_API_KEY') ?: ''); ?>;
 +    </script>
 +    <script src="js/ai-chat-widget.js?v=<?php echo $v_js_includes; ?>"></script>
++    <?php if (getenv('AI_CHAT_DEV_RELOAD')): ?>
++    <script>window.__CHAT_WIDGET_DEV_RELOAD = true;</script>
++    <script src="js/dev-reload.js?v=<?php echo $v_js_includes; ?>"></script>
++    <?php endif; ?>
 +
      <?php
      // Below code block is to prepare certain elements for deciding what links to show on the menu

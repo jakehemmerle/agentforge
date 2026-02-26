@@ -250,6 +250,7 @@ cmd_apply_overlay() {
     mkdir -p "$submodule_abs/interface/main/tabs/css"
     cp "$widget_dir/ai-chat-widget.js" "$submodule_abs/interface/main/tabs/js/"
     cp "$widget_dir/ai-chat-widget.css" "$submodule_abs/interface/main/tabs/css/"
+    cp "$widget_dir/dev-reload.js" "$submodule_abs/interface/main/tabs/js/"
   fi
 
   echo "Overlay applied."

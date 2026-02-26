@@ -3,6 +3,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const http = require("http");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const SRC = path.join(ROOT, "chat-widget", "src");
@@ -15,6 +16,10 @@ const TARGETS = [
   {
     src: "ai-chat-widget.css",
     dest: path.join(ROOT, "openemr", "interface", "main", "tabs", "css"),
+  },
+  {
+    src: "dev-reload.js",
+    dest: path.join(ROOT, "openemr", "interface", "main", "tabs", "js"),
   },
 ];
 
@@ -50,6 +55,10 @@ function copyAll() {
 console.log("chat-widget dev: initial copy…");
 copyAll();
 
+// Version tracking for hot-reload
+let jsVersion = 0;
+let cssVersion = 0;
+
 // Watch for changes
 console.log("chat-widget dev: watching src/ for changes…");
 let debounce = null;
@@ -60,5 +69,27 @@ fs.watch(SRC, (_event, filename) => {
     debounce = null;
     console.log(`\nchange detected: ${filename}`);
     copyAll();
+    if (filename.endsWith(".css")) {
+      cssVersion++;
+      console.log(`  css version → ${cssVersion}`);
+    } else if (filename.endsWith(".js")) {
+      jsVersion++;
+      console.log(`  js version → ${jsVersion}`);
+    }
   }, 100);
+});
+
+// Hot-reload version server
+const DEV_PORT = 8351;
+const server = http.createServer((_req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify({ js: jsVersion, css: cssVersion }));
+});
+server.listen(DEV_PORT, () => {
+  console.log(`chat-widget dev: version server on http://localhost:${DEV_PORT}/version`);
+  console.log("open http://localhost:8300");
+});
+server.on("error", (err) => {
+  console.warn(`warning: version server failed to start (${err.code}) — hot-reload disabled, file watcher still active`);
 });

@@ -70,6 +70,7 @@
         this.abortController = null;
         this._build();
         this._bindEvents();
+        this._restoreDevState();
     }
 
     AiChatWidget.prototype._build = function () {
@@ -351,6 +352,37 @@
             self.isStreaming = false;
             self.sendBtn.disabled = !self.inputEl.value.trim();
         });
+    };
+
+    AiChatWidget.prototype._restoreDevState = function () {
+        var raw = sessionStorage.getItem('__dev_reload_state');
+        if (!raw) {
+            return;
+        }
+        sessionStorage.removeItem('__dev_reload_state');
+
+        var state;
+        try {
+            state = JSON.parse(raw);
+        } catch (e) {
+            return;
+        }
+
+        // Clear the default welcome message
+        this.messagesEl.innerHTML = '';
+        this.messages = [];
+
+        // Replay saved messages
+        if (state.messages) {
+            for (var i = 0; i < state.messages.length; i++) {
+                this._addMessage(state.messages[i].role, state.messages[i].content);
+            }
+        }
+
+        // Restore open/closed state
+        if (state.isOpen && !this.isOpen) {
+            this.toggle();
+        }
     };
 
     AiChatWidget.prototype._finishStream = function (responseEl, responseText) {

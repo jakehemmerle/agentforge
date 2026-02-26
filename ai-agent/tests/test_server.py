@@ -236,6 +236,20 @@ def test_stream_rejects_missing_api_key(authed_client):
     assert resp.status_code == 401
 
 
+def test_preflight_skips_api_key_auth(authed_client):
+    """CORS preflight OPTIONS should not require X-API-Key."""
+    resp = authed_client.options(
+        "/api/chat",
+        headers={
+            "Origin": "http://localhost:8300",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,x-api-key",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.headers.get("access-control-allow-origin") == "http://localhost:8300"
+
+
 def test_health_does_not_require_api_key(authed_client):
     """Health endpoint is always open — no API key needed."""
     resp = authed_client.get("/health")
@@ -332,18 +346,19 @@ def test_stream_handles_list_content_chunks(client):
 
 
 def test_chat_handles_graph_error(client):
-    """When graph.ainvoke raises RuntimeError, the server returns a 500 response."""
+    """When graph.ainvoke raises RuntimeError, the server returns a 502 response."""
     with patch("ai_agent.server.graph") as mock_graph:
         mock_graph.ainvoke = AsyncMock(side_effect=RuntimeError("Graph error"))
         resp = client.post(
             "/api/chat",
             json={"message": "hello", "session_id": "err1"},
         )
-    assert resp.status_code == 500
+    assert resp.status_code == 502
+    assert "internal error" in resp.json()["detail"].lower()
 
 
 def test_stream_handles_graph_error(client):
-    """When graph.astream_events raises, the stream terminates without [DONE]."""
+    """When graph.astream_events raises, the stream still sends [DONE] so clients don't hang."""
     async def failing_events(*args, **kwargs):
         raise RuntimeError("Graph error")
         yield  # make it an async generator
@@ -355,5 +370,5 @@ def test_stream_handles_graph_error(client):
             json={"message": "hello", "session_id": "err2"},
         )
     # Error happens during streaming; headers (200) are already committed.
-    # The response body should NOT contain the normal [DONE] terminator.
-    assert "data: [DONE]" not in resp.text
+    # The [DONE] terminator MUST still be sent so the client can clean up.
+    assert "data: [DONE]" in resp.text

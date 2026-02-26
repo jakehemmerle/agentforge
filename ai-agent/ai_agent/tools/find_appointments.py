@@ -249,6 +249,10 @@ async def find_appointments(
         raise ToolException(
             f"OpenEMR API timed out: {exc}. Please try again."
         ) from exc
+    except httpx.RequestError as exc:
+        raise ToolException(
+            f"OpenEMR API network error: {exc}. Please check connectivity and try again."
+        ) from exc
     except httpx.HTTPStatusError as exc:
         raise ToolException(
             f"OpenEMR API error ({exc.response.status_code}): {exc.response.text}"

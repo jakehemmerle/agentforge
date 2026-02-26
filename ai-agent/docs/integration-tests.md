@@ -15,22 +15,25 @@ INTEGRATION_TEST=1 uv run pytest tests/ -v -m integration  # Integration only
 
 ## Ephemeral Test Environment
 
-Integration tests use `docker-compose.test.yml` — a dedicated compose file
-that uses **tmpfs mounts instead of named volumes**. This means:
+Integration tests use `docker-compose.test.yml` — an overlay on top of the
+base `docker-compose.yml` that replaces named volumes with ephemeral storage
+(tmpfs and anonymous volumes). This means:
 
-- Every `docker compose down` destroys all data (DB, config, logs)
+- Every `docker compose down -v` destroys all data (DB, config, logs)
 - Every `docker compose up` starts from a completely clean slate
 - No leftover state from previous runs can affect test results
 - Only the services needed for testing are started (mysql + openemr)
 
 The development compose file (`docker-compose.yml`) retains its persistent
-volumes for interactive development work. Tests never use it.
+volumes for interactive development work. The test overlay only adds
+ephemeral overrides on top of it.
 
 To manually start/stop the test environment:
 
 ```bash
-docker compose -f openemr/docker/development-easy/docker-compose.test.yml up -d --wait
-docker compose -f openemr/docker/development-easy/docker-compose.test.yml down
+cd openemr/docker/development-easy
+docker compose -f docker-compose.yml -f docker-compose.test.yml up mysql openemr -d --wait
+docker compose -f docker-compose.yml -f docker-compose.test.yml down -v
 ```
 
 ## Prerequisites
@@ -253,7 +256,8 @@ INTEGRATION_TEST=1 uv run pytest tests/test_validate_claim_integration.py -v
 
 MySQL container is not running or not healthy:
 ```bash
-docker compose -f openemr/docker/development-easy/docker-compose.test.yml ps
+cd openemr/docker/development-easy
+docker compose -f docker-compose.yml -f docker-compose.test.yml ps
 # Both mysql and openemr should show "(healthy)"
 ```
 
@@ -261,7 +265,8 @@ docker compose -f openemr/docker/development-easy/docker-compose.test.yml ps
 
 The OAuth client may not be enabled. Check:
 ```bash
-docker compose -f openemr/docker/development-easy/docker-compose.test.yml exec mysql \
+cd openemr/docker/development-easy
+docker compose -f docker-compose.yml -f docker-compose.test.yml exec mysql \
   mariadb -u openemr -popenemr openemr \
   -e "SELECT client_id, client_name, is_enabled FROM oauth_clients;"
 ```
@@ -275,7 +280,8 @@ cd ai-agent && uv run python scripts/seed_data.py
 
 Verify with SQL:
 ```bash
-docker compose -f openemr/docker/development-easy/docker-compose.test.yml exec mysql \
+cd openemr/docker/development-easy
+docker compose -f docker-compose.yml -f docker-compose.test.yml exec mysql \
   mariadb -u openemr -popenemr openemr \
   -e "SELECT pid, fname, lname FROM patient_data WHERE pid IN (90001, 90002);"
 ```
@@ -287,7 +293,8 @@ cd ai-agent && uv run python scripts/seed_data.py
 
 **Start fresh (tear down and re-create containers)**
 ```bash
-docker compose -f openemr/docker/development-easy/docker-compose.test.yml down --remove-orphans
+cd openemr/docker/development-easy
+docker compose -f docker-compose.yml -f docker-compose.test.yml down -v --remove-orphans
 INTEGRATION_TEST=1 uv run pytest tests/ -m integration -v
 ```
 

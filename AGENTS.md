@@ -9,3 +9,5 @@
 
 This repository is a workspace for building a fork of OpenEMR that contains an LLM-driven chat interface and
 server. The submodule is in `openemr/`, and we NEVER write to it, we only inject changes into it.
+
+CHANGES TO openemr/ MUST BE DONE THROUGH THE injectables/ MODULE!

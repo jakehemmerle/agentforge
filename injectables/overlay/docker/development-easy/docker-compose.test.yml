@@ -1,11 +1,11 @@
 # Ephemeral test overlay — no persistent volumes.
 #
 # Stacks on top of docker-compose.yml. All data is destroyed on
-# `docker compose down` so every run starts from a clean slate.
+# `docker compose down -v` so every run starts from a clean slate.
 #
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.test.yml up mysql openemr -d --wait
-#   docker compose -f docker-compose.yml -f docker-compose.test.yml down
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml down -v
 
 name: openemr-integration-test
 
@@ -24,13 +24,15 @@ services:
     volumes: !override
       - ../..:/openemr:ro
       - ../..:/var/www/localhost/htdocs/openemr:rw
+      # Anonymous volumes for dirs that need exec (npm/composer binaries).
+      # tmpfs can strip execute permissions, breaking postinstall scripts.
+      - /var/www/localhost/htdocs/openemr/node_modules
+      - /var/www/localhost/htdocs/openemr/vendor
+      - /var/www/localhost/htdocs/openemr/ccdaservice/node_modules
     tmpfs:
       - /var/www/localhost/htdocs/openemr/public/assets
       - /var/www/localhost/htdocs/openemr/public/themes
       - /var/www/localhost/htdocs/openemr/sites
-      - /var/www/localhost/htdocs/openemr/node_modules
-      - /var/www/localhost/htdocs/openemr/vendor
-      - /var/www/localhost/htdocs/openemr/ccdaservice/node_modules
       - /couchdb/data
     environment:
       XDEBUG_ON: 0

@@ -628,7 +628,7 @@ async def test_wrapper_fetches_billing_via_http_and_delegates(mock_claim_client)
     ]
 
     mock_settings = AM()
-    mock_settings.agent_base_url = "http://localhost:8000"
+    mock_settings.agent_base_url = "http://localhost:8350"
 
     patient = make_patient()
     encounter = make_encounter()
@@ -680,7 +680,7 @@ async def test_wrapper_graceful_on_billing_http_error():
     from unittest.mock import patch, AsyncMock as AM
 
     mock_settings = AM()
-    mock_settings.agent_base_url = "http://localhost:8000"
+    mock_settings.agent_base_url = "http://localhost:8350"
 
     patient = make_patient()
     encounter = make_encounter()
@@ -701,7 +701,7 @@ async def test_wrapper_graceful_on_billing_http_error():
     client_mock.__aexit__ = AsyncMock(return_value=False)
 
     # Mock httpx.AsyncClient to raise HTTPStatusError for billing endpoint
-    billing_response = httpx.Response(502, request=httpx.Request("GET", "http://localhost:8000/internal/billing"))
+    billing_response = httpx.Response(502, request=httpx.Request("GET", "http://localhost:8350/internal/billing"))
     mock_http_client = AsyncMock()
     mock_http_client.get = AsyncMock(
         side_effect=httpx.HTTPStatusError("Bad Gateway", request=billing_response.request, response=billing_response)
@@ -736,7 +736,7 @@ async def test_wrapper_graceful_on_insurance_timeout():
     ]
 
     mock_settings = AM()
-    mock_settings.agent_base_url = "http://localhost:8000"
+    mock_settings.agent_base_url = "http://localhost:8350"
 
     patient = make_patient()
     encounter = make_encounter()
@@ -782,3 +782,66 @@ async def test_wrapper_graceful_on_insurance_timeout():
     # But insurance warning should be present
     warning_checks = {w["check"] for w in result["warnings"]}
     assert "insurance" in warning_checks
+
+
+async def test_wrapper_graceful_on_insurance_request_error():
+    """Insurance API connect error should degrade gracefully with data warning."""
+    from unittest.mock import patch, AsyncMock as AM
+
+    billing_rows = [
+        {"code_type": "ICD10", "code": "J06.9", "code_text": "URI", "fee": 0, "modifier": "", "units": 1},
+        {"code_type": "CPT4", "code": "99213", "code_text": "Office visit", "fee": 75.0, "modifier": "", "units": 1},
+    ]
+
+    mock_settings = AM()
+    mock_settings.agent_base_url = "http://localhost:8350"
+
+    patient = make_patient()
+    encounter = make_encounter()
+
+    client_mock = AsyncMock()
+
+    async def mock_get(path: str, params: dict | None = None) -> dict:
+        if "/insurance" in path:
+            raise httpx.ConnectError(
+                "Connection failed",
+                request=httpx.Request("GET", path),
+            )
+        if "/encounter" in path:
+            return {"data": [encounter]}
+        if "/patient" in path:
+            return {"data": [patient]}
+        return {"data": []}
+
+    client_mock.get = AsyncMock(side_effect=mock_get)
+    client_mock.__aenter__ = AsyncMock(return_value=client_mock)
+    client_mock.__aexit__ = AsyncMock(return_value=False)
+
+    # Mock httpx.AsyncClient for successful billing endpoint call
+    billing_response = MagicMock()
+    billing_response.status_code = 200
+    billing_response.raise_for_status = MagicMock()
+    billing_response.json.return_value = {"data": billing_rows}
+
+    mock_http_client = AsyncMock()
+    mock_http_client.get = AsyncMock(return_value=billing_response)
+    mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
+    mock_http_client.__aexit__ = AsyncMock(return_value=False)
+
+    with (
+        patch("ai_agent.tools.validate_claim_completeness.httpx.AsyncClient", return_value=mock_http_client),
+        patch("ai_agent.tools.validate_claim_completeness.OpenEMRClient") as MockClient,
+        patch("ai_agent.config.get_settings", return_value=mock_settings),
+    ):
+        MockClient.from_settings.return_value = client_mock
+        result = await validate_claim_ready_completeness.ainvoke(
+            {"encounter_id": 5, "patient_id": 10}
+        )
+
+    assert result["ready"] is True
+    warning_checks = {w["check"] for w in result["warnings"]}
+    assert "insurance" in warning_checks
+    assert any(
+        "insurance_fetch_failed" in w and "network error" in w
+        for w in result["data_warnings"]
+    )

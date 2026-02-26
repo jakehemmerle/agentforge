@@ -119,11 +119,16 @@ def start_services() -> None:
     """
     _ensure_overlay_applied()
 
-    compose_cmd = ["docker", "compose", "-f", str(COMPOSE_TEST_FILE)]
+    compose_base_file = COMPOSE_TEST_FILE.parent / "docker-compose.yml"
+    compose_cmd = [
+        "docker", "compose",
+        "-f", str(compose_base_file),
+        "-f", str(COMPOSE_TEST_FILE),
+    ]
 
     print("Tearing down any previous test containers...")
     result = subprocess.run(
-        [*compose_cmd, "down", "--remove-orphans"],
+        [*compose_cmd, "down", "--remove-orphans", "-v"],
         capture_output=True,
         text=True,
     )
@@ -139,7 +144,7 @@ def start_services() -> None:
 
     print("Starting Docker services (ephemeral — no persistent volumes)...")
     subprocess.run(
-        [*compose_cmd, "up", "-d", "--wait"],
+        [*compose_cmd, "up", "mysql", "openemr", "-d", "--wait"],
         check=True,
         timeout=600,
     )

@@ -518,6 +518,39 @@ async def test_fhir_conditions_timeout_returns_empty(mock_fhir_timeout_client):
     assert any("conditions_fetch_failed" in w and "timed out" in w for w in result["data_warnings"])
 
 
+async def test_fhir_conditions_request_error_returns_empty():
+    """RequestError in conditions fetch is caught and returns empty list."""
+    patient = make_patient()
+    encounter = make_encounter()
+
+    client = AsyncMock()
+
+    async def mock_get(path: str, params: dict | None = None) -> dict:
+        if "/fhir/Condition" in path:
+            raise httpx.ConnectError(
+                "Connection failed",
+                request=httpx.Request("GET", path),
+            )
+        if "/encounter/" in path and "/vital" in path:
+            return {"data": []}
+        if "/encounter/" in path and "/soap_note" in path:
+            return {"data": []}
+        if "/encounter" in path:
+            return {"data": [encounter]}
+        if "/patient" in path:
+            return {"data": [patient]}
+        return {"entry": []}
+
+    client.get = AsyncMock(side_effect=mock_get)
+
+    result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
+    assert result["clinical_context"]["active_problems"] == []
+    assert any(
+        "conditions_fetch_failed" in w and "network error" in w
+        for w in result["data_warnings"]
+    )
+
+
 async def test_fhir_medications_timeout_returns_empty(mock_fhir_timeout_client):
     """TimeoutException in medications fetch is caught and returns empty list."""
     patient = make_patient()

@@ -55,6 +55,9 @@
         if (payload.charAt(0) === ' ') {
             payload = payload.substring(1);
         }
+        if (payload.charAt(payload.length - 1) === '\r') {
+            payload = payload.substring(0, payload.length - 1);
+        }
 
         return payload;
     }
@@ -250,10 +253,58 @@
             var decoder = new TextDecoder();
             var buffer = '';
 
+            var finished = false;
+
+            function processParsedLine(data) {
+                if (data === null) {
+                    return false;
+                }
+
+                if (data === '[DONE]') {
+                    if (!finished) {
+                        finished = true;
+                        self._finishStream(responseEl, responseText);
+                    }
+                    return true;
+                }
+
+                // Tool call notification
+                var toolMatch = data.match(/^\[calling:(.+)\]$/);
+                if (toolMatch) {
+                    self._removeTyping();
+                    self._showToolCall(toolMatch[1]);
+                    return false;
+                }
+
+                // Token
+                self._removeTyping();
+                self._removeToolCall();
+
+                if (!responseEl) {
+                    responseEl = document.createElement('div');
+                    responseEl.className = 'ai-chat-msg ai-chat-msg-assistant';
+                    self.messagesEl.appendChild(responseEl);
+                }
+
+                responseText += data;
+                responseEl.textContent = responseText;
+                self._scrollToBottom();
+                return false;
+            }
+
             function processChunk() {
                 return reader.read().then(function (result) {
                     if (result.done) {
-                        self._finishStream(responseEl, responseText);
+                        // Flush any remaining data in the buffer
+                        if (buffer.trim()) {
+                            var finalData = parseSSELine(buffer);
+                            processParsedLine(finalData);
+                            buffer = '';
+                        }
+                        if (!finished) {
+                            finished = true;
+                            self._finishStream(responseEl, responseText);
+                        }
                         return;
                     }
 
@@ -263,36 +314,10 @@
 
                     for (var i = 0; i < lines.length; i++) {
                         var data = parseSSELine(lines[i]);
-                        if (data === null) {
-                            continue;
-                        }
-
-                        if (data === '[DONE]') {
-                            self._finishStream(responseEl, responseText);
+                        var done = processParsedLine(data);
+                        if (done) {
                             return;
                         }
-
-                        // Tool call notification
-                        var toolMatch = data.match(/^\[calling:(.+)\]$/);
-                        if (toolMatch) {
-                            self._removeTyping();
-                            self._showToolCall(toolMatch[1]);
-                            continue;
-                        }
-
-                        // Token
-                        self._removeTyping();
-                        self._removeToolCall();
-
-                        if (!responseEl) {
-                            responseEl = document.createElement('div');
-                            responseEl.className = 'ai-chat-msg ai-chat-msg-assistant';
-                            self.messagesEl.appendChild(responseEl);
-                        }
-
-                        responseText += data;
-                        responseEl.textContent = responseText;
-                        self._scrollToBottom();
                     }
 
                     return processChunk();

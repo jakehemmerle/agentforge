@@ -262,6 +262,9 @@ async def _get_encounter_context_impl(
         except httpx.TimeoutException:
             logger.warning("Timed out fetching conditions for patient %s", puuid)
             return [], ["conditions_fetch_failed: request timed out"]
+        except httpx.RequestError as exc:
+            logger.warning("Network error fetching conditions for patient %s: %s", puuid, exc)
+            return [], ["conditions_fetch_failed: network error retrieving conditions"]
 
     async def _fetch_medications() -> tuple[list[dict[str, Any]], list[str]]:
         try:
@@ -277,6 +280,9 @@ async def _get_encounter_context_impl(
         except httpx.TimeoutException:
             logger.warning("Timed out fetching medications for patient %s", puuid)
             return [], ["medications_fetch_failed: request timed out"]
+        except httpx.RequestError as exc:
+            logger.warning("Network error fetching medications for patient %s: %s", puuid, exc)
+            return [], ["medications_fetch_failed: network error retrieving medications"]
 
     async def _fetch_allergies() -> tuple[list[dict[str, Any]], list[str]]:
         try:
@@ -291,6 +297,9 @@ async def _get_encounter_context_impl(
         except httpx.TimeoutException:
             logger.warning("Timed out fetching allergies for patient %s", puuid)
             return [], ["allergies_fetch_failed: request timed out"]
+        except httpx.RequestError as exc:
+            logger.warning("Network error fetching allergies for patient %s: %s", puuid, exc)
+            return [], ["allergies_fetch_failed: network error retrieving allergies"]
 
     async def _fetch_vitals() -> tuple[dict[str, Any] | None, list[str]]:
         try:
@@ -307,6 +316,9 @@ async def _get_encounter_context_impl(
         except httpx.TimeoutException:
             logger.warning("Timed out fetching vitals for encounter %s", eid)
             return None, ["vitals_fetch_failed: request timed out"]
+        except httpx.RequestError as exc:
+            logger.warning("Network error fetching vitals for encounter %s: %s", eid, exc)
+            return None, ["vitals_fetch_failed: network error retrieving vitals"]
 
     async def _fetch_soap_notes() -> tuple[list[dict[str, Any]], list[str]]:
         try:
@@ -323,6 +335,9 @@ async def _get_encounter_context_impl(
         except httpx.TimeoutException:
             logger.warning("Timed out fetching SOAP notes for encounter %s", eid)
             return [], ["soap_notes_fetch_failed: request timed out"]
+        except httpx.RequestError as exc:
+            logger.warning("Network error fetching SOAP notes for encounter %s: %s", eid, exc)
+            return [], ["soap_notes_fetch_failed: network error retrieving soap notes"]
 
     (conditions, cond_w), (medications, med_w), (allergies, allergy_w), (vitals, vitals_w), (soap_notes, soap_w) = await asyncio.gather(
         _fetch_conditions(),
@@ -385,6 +400,10 @@ async def get_encounter_context(
     except httpx.TimeoutException as exc:
         raise ToolException(
             f"OpenEMR API timed out: {exc}. Please try again."
+        ) from exc
+    except httpx.RequestError as exc:
+        raise ToolException(
+            f"OpenEMR API network error: {exc}. Please check connectivity and try again."
         ) from exc
     except httpx.HTTPStatusError as exc:
         raise ToolException(

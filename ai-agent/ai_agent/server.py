@@ -65,6 +65,11 @@ app.add_middleware(
 @app.middleware("http")
 async def check_api_key(request: Request, call_next):
     """Enforce API key auth when API_KEY is configured."""
+    # Let CORS preflight requests pass through without API-key checks.
+    # Browsers do not send custom auth headers on preflight.
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     settings = get_settings()
     if request.url.path.startswith("/internal/"):
         client_host = request.client.host if request.client else ""
@@ -105,16 +110,29 @@ async def chat(req: ChatRequest):
         "run_name": "chat_request",
     }
 
-    result = await graph.ainvoke(
-        {"messages": [HumanMessage(content=req.message)]},
-        config=config,
-    )
+    try:
+        result = await graph.ainvoke(
+            {"messages": [HumanMessage(content=req.message)]},
+            config=config,
+        )
+    except Exception:
+        logger.exception("graph.ainvoke failed for session %s", req.session_id)
+        return JSONResponse(
+            status_code=502,
+            content={"detail": "The AI agent encountered an internal error."},
+        )
 
-    # Extract response text and tool calls from messages
+    # Extract the final AI response and all tool calls from messages.
+    # The last AIMessage with content is the agent's final answer.
     response_text = ""
     tool_calls: list[dict[str, Any]] = []
-    for msg in result.get("messages", []):
-        if hasattr(msg, "content") and msg.content:
+    for msg in reversed(result.get("messages", [])):
+        if (
+            hasattr(msg, "content")
+            and msg.content
+            and not response_text
+            and getattr(msg, "type", None) == "ai"
+        ):
             response_text = _extract_text(msg.content)
         if hasattr(msg, "tool_calls") and msg.tool_calls:
             for tc in msg.tool_calls:
@@ -140,21 +158,25 @@ async def stream(req: ChatRequest):
     }
 
     async def event_generator():
-        async for event in graph.astream_events(
-            {"messages": [HumanMessage(content=req.message)]},
-            config=config,
-            version="v2",
-        ):
-            kind = event.get("event", "")
-            if kind == "on_chat_model_stream":
-                chunk = event.get("data", {}).get("chunk")
-                if chunk and hasattr(chunk, "content") and chunk.content:
-                    yield f"data: {_extract_text(chunk.content)}\n\n"
-            elif kind == "on_tool_start":
-                name = event.get("name", "")
-                if name:
-                    yield f"data: [calling:{name}]\n\n"
-        yield "data: [DONE]\n\n"
+        try:
+            async for event in graph.astream_events(
+                {"messages": [HumanMessage(content=req.message)]},
+                config=config,
+                version="v2",
+            ):
+                kind = event.get("event", "")
+                if kind == "on_chat_model_stream":
+                    chunk = event.get("data", {}).get("chunk")
+                    if chunk and hasattr(chunk, "content") and chunk.content:
+                        yield f"data: {_extract_text(chunk.content)}\n\n"
+                elif kind == "on_tool_start":
+                    name = event.get("name", "")
+                    if name:
+                        yield f"data: [calling:{name}]\n\n"
+        except Exception:
+            logger.exception("Streaming error for session %s", req.session_id)
+        finally:
+            yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         event_generator(),

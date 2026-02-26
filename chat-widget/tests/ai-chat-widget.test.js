@@ -192,4 +192,8 @@ describe('parseSSELine', function () {
     test('handles data: with only a space (empty payload)', function () {
         expect(parseSSELine('data: ')).toBe('');
     });
+
+    test('strips trailing carriage return from CRLF lines', function () {
+        expect(parseSSELine('data: [DONE]\r')).toBe('[DONE]');
+    });
 });

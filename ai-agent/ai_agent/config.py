@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:8300,https://localhost:9300"
 
-    agent_base_url: str = "http://localhost:8000"
+    agent_base_url: str = "http://localhost:8350"
     openemr_base_url: str = "http://openemr:80"
     openemr_client_id: str = ""
     openemr_client_secret: str = ""

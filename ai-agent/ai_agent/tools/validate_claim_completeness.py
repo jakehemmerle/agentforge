@@ -303,7 +303,7 @@ async def validate_claim_ready_completeness(
     except httpx.TimeoutException:
         logger.warning("Timed out fetching billing data for encounter %s", encounter_id)
         fetch_data_warnings.append("billing_fetch_failed: request timed out")
-    except Exception as exc:
+    except (httpx.ConnectError, httpx.RequestError, OSError) as exc:
         logger.warning("Failed to fetch billing data: %s", exc)
         fetch_data_warnings.append(
             "billing_fetch_failed: unexpected error retrieving billing codes"
@@ -340,6 +340,11 @@ async def validate_claim_ready_completeness(
             except httpx.TimeoutException:
                 logger.warning("Timed out fetching insurance data for patient %s", patient_id)
                 fetch_data_warnings.append("insurance_fetch_failed: request timed out")
+            except httpx.RequestError as exc:
+                logger.warning("Failed to fetch insurance data: %s", exc)
+                fetch_data_warnings.append(
+                    "insurance_fetch_failed: network error retrieving insurance"
+                )
 
             return await _validate_claim_impl(
                 client,
@@ -352,6 +357,10 @@ async def validate_claim_ready_completeness(
     except httpx.TimeoutException as exc:
         raise ToolException(
             f"OpenEMR API timed out: {exc}. Please try again."
+        ) from exc
+    except httpx.RequestError as exc:
+        raise ToolException(
+            f"OpenEMR API network error: {exc}. Please check connectivity and try again."
         ) from exc
     except httpx.HTTPStatusError as exc:
         raise ToolException(

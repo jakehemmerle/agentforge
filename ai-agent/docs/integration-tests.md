@@ -29,8 +29,8 @@ volumes for interactive development work. Tests never use it.
 To manually start/stop the test environment:
 
 ```bash
-docker compose -f docker/development-easy/docker-compose.test.yml up -d --wait
-docker compose -f docker/development-easy/docker-compose.test.yml down
+docker compose -f openemr/docker/development-easy/docker-compose.test.yml up -d --wait
+docker compose -f openemr/docker/development-easy/docker-compose.test.yml down
 ```
 
 ## Prerequisites
@@ -253,7 +253,7 @@ INTEGRATION_TEST=1 uv run pytest tests/test_validate_claim_integration.py -v
 
 MySQL container is not running or not healthy:
 ```bash
-docker compose -f docker/development-easy/docker-compose.test.yml ps
+docker compose -f openemr/docker/development-easy/docker-compose.test.yml ps
 # Both mysql and openemr should show "(healthy)"
 ```
 
@@ -261,7 +261,7 @@ docker compose -f docker/development-easy/docker-compose.test.yml ps
 
 The OAuth client may not be enabled. Check:
 ```bash
-docker compose -f docker/development-easy/docker-compose.test.yml exec mysql \
+docker compose -f openemr/docker/development-easy/docker-compose.test.yml exec mysql \
   mariadb -u openemr -popenemr openemr \
   -e "SELECT client_id, client_name, is_enabled FROM oauth_clients;"
 ```
@@ -275,7 +275,7 @@ cd ai-agent && uv run python scripts/seed_data.py
 
 Verify with SQL:
 ```bash
-docker compose -f docker/development-easy/docker-compose.test.yml exec mysql \
+docker compose -f openemr/docker/development-easy/docker-compose.test.yml exec mysql \
   mariadb -u openemr -popenemr openemr \
   -e "SELECT pid, fname, lname FROM patient_data WHERE pid IN (90001, 90002);"
 ```
@@ -287,7 +287,7 @@ cd ai-agent && uv run python scripts/seed_data.py
 
 **Start fresh (tear down and re-create containers)**
 ```bash
-docker compose -f docker/development-easy/docker-compose.test.yml down --remove-orphans
+docker compose -f openemr/docker/development-easy/docker-compose.test.yml down --remove-orphans
 INTEGRATION_TEST=1 uv run pytest tests/ -m integration -v
 ```
 

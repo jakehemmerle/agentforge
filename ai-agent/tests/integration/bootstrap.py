@@ -79,13 +79,35 @@ def check_port_conflicts() -> None:
             + "\n\nIntegration tests require exclusive use of these ports.\n"
             "Stop any services occupying them (e.g. development Docker "
             "containers) before running integration tests:\n"
-            "  docker compose -f docker/development-easy/docker-compose.yml down"
+            "  docker compose -f openemr/docker/development-easy/docker-compose.yml down"
         )
 
 
 # ---------------------------------------------------------------------------
 # Docker lifecycle
 # ---------------------------------------------------------------------------
+
+
+def _ensure_overlay_applied() -> None:
+    """Check that the OpenEMR overlay has been applied.
+
+    Raises :class:`RuntimeError` with an actionable message if
+    ``docker-compose.test.yml`` is missing from the compose directory,
+    indicating the overlay has not been applied.
+    """
+    if COMPOSE_TEST_FILE.exists():
+        return
+
+    raise RuntimeError(
+        f"Compose test file not found: {COMPOSE_TEST_FILE}\n\n"
+        "The OpenEMR overlay has not been applied. "
+        "Integration tests require the overlay (patches + widget files) "
+        "to be applied before running.\n\n"
+        "Apply the overlay first:\n"
+        "  ./injectables/openemr-customize.sh apply\n\n"
+        "Then re-run integration tests:\n"
+        "  INTEGRATION_TEST=1 uv run pytest tests/ -m integration"
+    )
 
 
 def start_services() -> None:
@@ -95,6 +117,8 @@ def start_services() -> None:
     a completely clean slate.  Integration tests must never reuse
     existing containers.
     """
+    _ensure_overlay_applied()
+
     compose_cmd = ["docker", "compose", "-f", str(COMPOSE_TEST_FILE)]
 
     print("Tearing down any previous test containers...")

@@ -26,14 +26,11 @@ uv run pytest -m unit -v   # Unit tests only (no Docker)
 uv run pytest tests/test_find_appointments.py  # Single file
 ```
 
-For integration tests (require Docker services):
+Integration tests are EXTREMELY important to run before committing and pushing.
 
 ```bash
-INTEGRATION_TEST=1 uv run pytest -m integration -v
+INTEGRATION_TEST=1 uv run pytest -m integration -v # integration
 ```
-
-See [docs/integration-tests.md](docs/integration-tests.md) for full integration
-test setup, fixture chain, and troubleshooting.
 
 ## Adding Dependencies
 
@@ -47,7 +44,7 @@ uv add <package-name>   # Never edit pyproject.toml directly
 The ai-agent runs as a Docker service alongside OpenEMR:
 
 ```bash
-cd docker/development-easy
+cd openemr/docker/development-easy
 docker compose up ai-agent --detach
 docker compose logs ai-agent          # View logs
 ```
@@ -64,16 +61,4 @@ Service URL: http://localhost:8350/
 
 ## Further Documentation
 
-- [docs/deployment.md](docs/deployment.md) — GCP Compute Engine staging deployment guide
-- [docs/testing-best-practices.md](docs/testing-best-practices.md) — integration test harness and seeding strategy
 - [docs/integration-tests.md](docs/integration-tests.md) — full integration test reference
-- [contracts/engineering_contract.json](contracts/engineering_contract.json) — executable consistency contract for docs/infra/workflows
-
-## Engineering Contract
-
-Validate cross-file deployment/process invariants:
-
-```bash
-cd ai-agent
-python scripts/validate_engineering_contract.py
-```

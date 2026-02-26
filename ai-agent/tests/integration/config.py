@@ -13,7 +13,7 @@ from pathlib import Path
 # Paths
 # ---------------------------------------------------------------------------
 
-COMPOSE_DIR = Path(__file__).resolve().parents[3] / "docker" / "development-easy"
+COMPOSE_DIR = Path(__file__).resolve().parents[3] / "openemr" / "docker" / "development-easy"
 COMPOSE_TEST_FILE = COMPOSE_DIR / "docker-compose.test.yml"
 AI_AGENT_DIR = Path(__file__).resolve().parents[2]
 

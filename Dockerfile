@@ -39,10 +39,12 @@ RUN composer global require phing/phing && \
     composer global remove phing/phing && \
     composer dump-autoload --optimize --apcu
 
-# Overlay our custom AI chat widget files
-COPY interface/main/tabs/main.php /var/www/localhost/htdocs/openemr/interface/main/tabs/main.php
-COPY interface/main/tabs/js/ai-chat-widget.js /var/www/localhost/htdocs/openemr/interface/main/tabs/js/
-COPY interface/main/tabs/css/ai-chat-widget.css /var/www/localhost/htdocs/openemr/interface/main/tabs/css/
+# Overlay injectable customizations from the local submodule checkout.
+# IMPORTANT: run `./injectables/openemr-customize.sh apply` before `docker build`.
+COPY openemr/interface/main/tabs/main.php /var/www/localhost/htdocs/openemr/interface/main/tabs/main.php
+COPY openemr/interface/main/tabs/js/ai-chat-widget.js /var/www/localhost/htdocs/openemr/interface/main/tabs/js/
+COPY openemr/interface/main/tabs/css/ai-chat-widget.css /var/www/localhost/htdocs/openemr/interface/main/tabs/css/
+COPY openemr/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php /var/www/localhost/htdocs/openemr/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php
 
 # Replace the flex entrypoint with our custom entrypoint.
 # See docker-entrypoint.sh for details on why we can't use the flex entrypoint.

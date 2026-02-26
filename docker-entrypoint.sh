@@ -170,8 +170,38 @@ if [ -n "$OPENEMR_SETTINGS" ]; then
 fi
 
 # ---------------------------------------------------------------
-# 5. Generate self-signed SSL certificates (required by Apache config)
+# 5. Generate OAuth2 key pair if missing
 # ---------------------------------------------------------------
+# OAuth2 keys (oaprivate.key / oapublic.key) are generated lazily by
+# OpenEMR's OAuth2KeyConfig on first OAuth request.  On ephemeral
+# containers the filesystem resets every boot, so the keys are always
+# missing.  Pre-generate them here so the /meta/health/readyz probe
+# reports oauth_keys=true immediately and the AI agent can register
+# an OAuth client without waiting for a browser-triggered flow.
+CERT_DIR="${OE_ROOT}/sites/default/documents/certificates"
+if [ ! -f "${CERT_DIR}/oaprivate.key" ] || [ ! -f "${CERT_DIR}/oapublic.key" ]; then
+    echo "Generating OAuth2 key pair..."
+    mkdir -p "${CERT_DIR}"
+    OA_PASSPHRASE="$(head -c 45 /dev/urandom | base64 | tr -d '\n' | head -c 60)"
+    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
+        -aes-256-cbc -pass "pass:${OA_PASSPHRASE}" \
+        -out "${CERT_DIR}/oaprivate.key" 2>/dev/null
+    openssl rsa -in "${CERT_DIR}/oaprivate.key" -passin "pass:${OA_PASSPHRASE}" \
+        -pubout -out "${CERT_DIR}/oapublic.key" 2>/dev/null
+    chmod 640 "${CERT_DIR}/oaprivate.key"
+    chmod 660 "${CERT_DIR}/oapublic.key"
+    chown apache:apache "${CERT_DIR}/oaprivate.key" "${CERT_DIR}/oapublic.key"
+    echo "OAuth2 key pair created."
+    # Note: the matching DB rows (oauth2key / oauth2passphrase) are still
+    # created lazily by OAuth2KeyConfig on first OAuth request.  The keys
+    # on disk satisfy the health-check; the DB rows are populated when the
+    # AI agent's setup_oauth.py registers its client.
+fi
+
+# ---------------------------------------------------------------
+# 6. Generate self-signed SSL certificates (required by Apache config)
+# ---------------------------------------------------------------
+
 if [ ! -f /etc/ssl/certs/webserver.cert.pem ]; then
     echo "Generating self-signed SSL certificate..."
     mkdir -p /etc/ssl/private /etc/ssl/certs
@@ -186,7 +216,7 @@ if [ ! -f /etc/ssl/certs/webserver.cert.pem ]; then
 fi
 
 # ---------------------------------------------------------------
-# 6. Set ownership and start Apache
+# 7. Set ownership and start Apache
 # ---------------------------------------------------------------
 chown -R apache:apache "${OE_ROOT}/sites/default" 2>/dev/null || true
 

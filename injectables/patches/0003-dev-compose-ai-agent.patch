@@ -1,5 +1,5 @@
 diff --git a/docker/development-easy/docker-compose.yml b/docker/development-easy/docker-compose.yml
-index 72e4e1eb8..639124625 100644
+index 72e4e1eb8..6279ce5ae 100644
 --- a/docker/development-easy/docker-compose.yml
 +++ b/docker/development-easy/docker-compose.yml
 @@ -91,6 +91,8 @@ services:
@@ -33,7 +33,7 @@ index 72e4e1eb8..639124625 100644
 +    depends_on:
 +      openemr:
 +        condition: service_healthy
-+    command: ["uv", "run", "uvicorn", "ai_agent.server:app", "--host", "0.0.0.0", "--port", "8350", "--reload", "--reload-exclude", ".venv"]
++    command: ["uv", "run", "uvicorn", "ai_agent.server:app", "--host", "0.0.0.0", "--port", "8350", "--reload", "--reload-dir", "ai_agent"]
 +    healthcheck:
 +      test: ["CMD", "curl", "-f", "http://localhost:8350/health"]
 +      start_period: 30s

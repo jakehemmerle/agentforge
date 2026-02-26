@@ -137,8 +137,11 @@ def _parse_llm_response(content: str, note_type: str) -> tuple[dict[str, Any], b
     # Strip markdown code fences if present
     if text.startswith("```"):
         lines = text.split("\n")
-        # Remove first and last lines (``` markers)
-        lines = [l for l in lines if not l.strip().startswith("```")]
+        # Remove only the opening and closing fence lines
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
         text = "\n".join(lines)
 
     try:
@@ -240,7 +243,16 @@ async def _draft_encounter_note_impl(
         HumanMessage(content=user_prompt),
     ]
     response = await llm.ainvoke(messages)
-    raw_content = response.content if isinstance(response.content, str) else str(response.content)
+    if isinstance(response.content, str):
+        raw_content = response.content
+    elif isinstance(response.content, list):
+        raw_content = "".join(
+            block["text"]
+            for block in response.content
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+    else:
+        raw_content = str(response.content)
 
     # 5. Parse response
     content, parse_failed = _parse_llm_response(raw_content, note_type)
@@ -290,7 +302,7 @@ async def draft_encounter_note(
     llm = ChatAnthropic(
         model=settings.model_name,
         temperature=0,
-        api_key=settings.anthropic_api_key,
+        api_key=settings.anthropic_api_key or None,
     )
 
     try:

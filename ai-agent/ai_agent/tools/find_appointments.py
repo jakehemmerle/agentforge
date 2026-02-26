@@ -159,6 +159,7 @@ async def _find_appointments_impl(
                 "appointments": [],
                 "total_count": 0,
                 "message": f"No patients found matching '{patient_name}'.",
+                "data_warnings": [],
             }
         if len(patients) > 5:
             matches = [
@@ -174,6 +175,7 @@ async def _find_appointments_impl(
                 "total_count": 0,
                 "message": f"Multiple patients match '{patient_name}'. Please clarify which patient.",
                 "matching_patients": matches,
+                "data_warnings": [],
             }
         resolved_pids = [p["pid"] for p in patients if p.get("pid")]
 
@@ -204,6 +206,7 @@ async def _find_appointments_impl(
     result: dict[str, Any] = {
         "appointments": appointments,
         "total_count": len(appointments),
+        "data_warnings": [],
     }
     if not appointments:
         result["message"] = "No appointments found matching criteria."

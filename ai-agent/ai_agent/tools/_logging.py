@@ -11,6 +11,8 @@ from typing import Any, Callable
 import httpx
 from langchain_core.tools import ToolException
 
+from ai_agent.openemr_client import OpenEMRAuthError
+
 logger = logging.getLogger("ai_agent.tools")
 
 # PHI keys that always get redacted to "[REDACTED]"
@@ -75,6 +77,8 @@ def classify_error(exc: Exception) -> str:
         validation_error – ToolException with validation-related message
         unknown          – everything else
     """
+    if isinstance(exc, OpenEMRAuthError):
+        return "auth_error"
     if isinstance(exc, httpx.TimeoutException):
         return "api_timeout"
     if isinstance(exc, httpx.HTTPStatusError):

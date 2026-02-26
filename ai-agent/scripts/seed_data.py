@@ -770,7 +770,7 @@ def seed_billing(cur) -> None:
     if cur.fetchone():
         print("  Billing for encounter 900002 exists, skipping")
     else:
-        # Only ICD-10 diagnosis, no CPT procedure — intentionally incomplete
+        # Only CPT procedure, no ICD-10 diagnosis — intentionally incomplete
         cur.execute(
             """
             INSERT INTO billing

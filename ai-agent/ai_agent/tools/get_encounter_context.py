@@ -242,6 +242,10 @@ async def _get_encounter_context_impl(
             }
         matched_enc = date_matches[0]
 
+    if matched_enc is None:
+        raise ToolException(
+            "Either encounter_id or date must be provided to resolve an encounter."
+        )
     enc = matched_enc
     eid = enc.get("id") or enc.get("eid")
     pid = enc.get("pid", patient_id)
@@ -252,7 +256,7 @@ async def _get_encounter_context_impl(
     async def _fetch_conditions() -> tuple[list[dict[str, Any]], list[str]]:
         try:
             bundle = await client.get(
-                f"/apis/default/fhir/Condition", params={"patient": puuid}
+                "/apis/default/fhir/Condition", params={"patient": puuid}
             )
             return _parse_conditions(bundle), []
         except httpx.HTTPStatusError as exc:
@@ -269,7 +273,7 @@ async def _get_encounter_context_impl(
     async def _fetch_medications() -> tuple[list[dict[str, Any]], list[str]]:
         try:
             bundle = await client.get(
-                f"/apis/default/fhir/MedicationRequest",
+                "/apis/default/fhir/MedicationRequest",
                 params={"patient": puuid, "status": "active"},
             )
             return _parse_medications(bundle), []
@@ -287,7 +291,7 @@ async def _get_encounter_context_impl(
     async def _fetch_allergies() -> tuple[list[dict[str, Any]], list[str]]:
         try:
             bundle = await client.get(
-                f"/apis/default/fhir/AllergyIntolerance", params={"patient": puuid}
+                "/apis/default/fhir/AllergyIntolerance", params={"patient": puuid}
             )
             return _parse_allergies(bundle), []
         except httpx.HTTPStatusError as exc:

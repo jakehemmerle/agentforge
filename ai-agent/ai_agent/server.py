@@ -73,7 +73,7 @@ async def check_api_key(request: Request, call_next):
     settings = get_settings()
     if request.url.path.startswith("/internal/"):
         client_host = request.client.host if request.client else ""
-        if client_host not in ("127.0.0.1", "::1", "localhost"):
+        if client_host not in ("127.0.0.1", "::1"):
             return JSONResponse(status_code=403, content={"detail": "Forbidden"})
     elif settings.api_key and request.url.path not in ("/health",):
         key = request.headers.get("X-API-Key", "")
@@ -175,6 +175,7 @@ async def stream(req: ChatRequest):
                         yield f"data: [calling:{name}]\n\n"
         except Exception:
             logger.exception("Streaming error for session %s", req.session_id)
+            yield "data: [ERROR]\n\n"
         finally:
             yield "data: [DONE]\n\n"
 
@@ -259,6 +260,6 @@ async def internal_billing(
         logger.warning("Failed to query billing table: %s", exc)
         return JSONResponse(
             status_code=502,
-            content={"detail": f"Billing query failed: {exc}"},
+            content={"detail": "Billing query failed"},
         )
     return {"data": rows}

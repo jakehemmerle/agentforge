@@ -39,7 +39,10 @@ def _load_yaml(filename: str) -> dict[str, Any]:
     """Read and parse a YAML file from the config directory."""
     path = _CONFIG_DIR / filename
     with open(path) as f:
-        return yaml.safe_load(f)
+        data = yaml.safe_load(f)
+    if data is None:
+        raise ValueError(f"Config file is empty: {path}")
+    return data
 
 
 @lru_cache(maxsize=1)

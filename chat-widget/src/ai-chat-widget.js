@@ -180,6 +180,7 @@
     };
 
     AiChatWidget.prototype._showToolCall = function (toolName) {
+        this._removeToolCall();
         var el = document.createElement('div');
         el.className = 'ai-chat-tool-call';
         el.id = 'ai-chat-tool-indicator';
@@ -268,6 +269,15 @@
                     return true;
                 }
 
+                if (data === '[ERROR]') {
+                    self._removeTyping();
+                    self._removeToolCall();
+                    if (!responseEl) {
+                        self._addMessage('assistant', 'Sorry, something went wrong while processing your request. Please try again.');
+                    }
+                    return false;
+                }
+
                 // Tool call notification
                 var toolMatch = data.match(/^\[calling:(.+)\]$/);
                 if (toolMatch) {
@@ -330,6 +340,9 @@
             self._removeToolCall();
 
             if (err.name === 'AbortError') {
+                self.isStreaming = false;
+                self.abortController = null;
+                self.sendBtn.disabled = !self.inputEl.value.trim();
                 return;
             }
 

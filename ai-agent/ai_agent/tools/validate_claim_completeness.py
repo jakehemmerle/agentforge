@@ -76,7 +76,10 @@ def _check_procedure_codes(
         })
     else:
         for row in cpt_rows:
-            fee = float(row.get("fee") or 0)
+            try:
+                fee = float(row.get("fee") or 0)
+            except (ValueError, TypeError):
+                fee = 0.0
             total_charges += fee
             if fee == 0:
                 warnings.append({

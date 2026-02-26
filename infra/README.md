@@ -2,11 +2,11 @@
 
 Pulumi program for staging runs from this directory.
 
+Read [local-deploy.md](local-deploy.md) for instructions on deploying the system locally.
+
 ## Quick Commands
 
 ```bash
-python ../ai-agent/scripts/validate_engineering_contract.py
-
 cd infra
 export PULUMI_CONFIG_PASSPHRASE=""
 pulumi stack select staging

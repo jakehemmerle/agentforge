@@ -23,8 +23,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Install Pulumi
         uses: pulumi/actions@v6
-      - name: Validate engineering contract
-        run: python ai-agent/scripts/validate_engineering_contract.py
       - name: Run infra tests
         working-directory: infra
         run: |

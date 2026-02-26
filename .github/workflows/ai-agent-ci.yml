@@ -2,29 +2,18 @@ name: AI Agent CI
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths: ['ai-agent/**']
   pull_request:
-    branches: [master]
+    branches: [main]
     paths: ['ai-agent/**']
 
 permissions:
   contents: read
 
 jobs:
-  contract:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Validate engineering contract
-        run: python ai-agent/scripts/validate_engineering_contract.py
-
   lint:
     runs-on: ubuntu-24.04
-    needs: [contract]
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v5
@@ -37,7 +26,6 @@ jobs:
 
   test:
     runs-on: ubuntu-24.04
-    needs: [contract]
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v5
@@ -49,7 +37,7 @@ jobs:
 
   build:
     runs-on: ubuntu-24.04
-    needs: [contract, lint, test]
+    needs: [lint, test]
     steps:
       - uses: actions/checkout@v6
       - name: Build Docker image

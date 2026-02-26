@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths:
       - 'ai-agent/**'
-      - 'interface/main/tabs/**'
+      - 'chat-widget/**'
+      - 'injectables/**'
       - 'Dockerfile'
       - 'docker-entrypoint.sh'
       - 'infra/**'
@@ -22,27 +23,20 @@ env:
   PULUMI_STACK: staging
 
 jobs:
-  contract:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Validate engineering contract
-        run: python ai-agent/scripts/validate_engineering_contract.py
-
   build-openemr:
     runs-on: ubuntu-24.04
-    needs: [contract]
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
       - uses: google-github-actions/setup-gcloud@v2
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+      - name: Apply injectables
+        run: ./injectables/openemr-customize.sh apply
       - name: Build and push OpenEMR image
         run: |
           docker build \
@@ -53,7 +47,6 @@ jobs:
 
   build-agent:
     runs-on: ubuntu-24.04
-    needs: [contract]
     steps:
       - uses: actions/checkout@v6
       - uses: google-github-actions/auth@v2

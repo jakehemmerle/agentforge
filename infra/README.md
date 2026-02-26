@@ -32,6 +32,5 @@ See:
 This includes:
 
 - Artifact Registry auth failures on VM startup
-- Health endpoint interpretation (`502` vs `setup_required`)
 - Staging DB reset runbook
 - Seed data source references

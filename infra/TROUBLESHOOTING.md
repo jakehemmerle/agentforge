@@ -44,6 +44,8 @@ echo "$TOKEN" | docker login -u oauth2accesstoken --password-stdin https://us-ce
 
 ## 3) OpenEMR first boot appears hung
 
+This shouldn't happen anymore because you shouldn't be destroying the cloud SQL instance ever, but IF WE EXPLICITLY AGREE TO, then we should note these.
+
 Symptom:
 
 - Gateway returns `502`
@@ -63,14 +65,9 @@ sudo docker exec openemr-openemr-1 sh -lc "mysql --skip-ssl -hcloud-sql-proxy -P
 
 If `trx_rows_modified` increases over time, setup is still progressing.
 
-## 4) Health endpoints and status interpretation
-
-- `502` from gateway means upstream `openemr` container is not ready/listening.
-- `200` from `/meta/health/readyz` with `setup_required` means app reachable but
-  setup not complete.
-- `200` from `/agent/health` only confirms ai-agent health.
-
 ## 5) Volume mount pitfalls
+
+This is unconfirmed.
 
 Avoid these mounts for OpenEMR runtime:
 
@@ -117,28 +114,3 @@ Reference:
 Never enable `set -x` in VM startup scripts that fetch or render secrets. It can
 write secret values to serial logs.
 
-## 9) Pulumi Python `NameError` while rendering startup script
-
-Symptom:
-
-- `pulumi up` fails with:
-- `NameError: name 'CLOUD_SQL_CONNECTION' is not defined`
-- Stack trace points to `_render_startup_script` in `infra/__main__.py`.
-
-Cause:
-
-- The startup script template is an f-string in Python.
-- Shell placeholders like `${CLOUD_SQL_CONNECTION}` are interpreted by Python
-  if braces are not escaped.
-
-Fix:
-
-- Escape shell braces in Python f-strings:
-- Use `${{CLOUD_SQL_CONNECTION}}` instead of `${CLOUD_SQL_CONNECTION}`.
-- Re-run:
-
-```bash
-cd infra
-export PULUMI_CONFIG_PASSPHRASE=""
-pulumi up --stack staging --yes
-```

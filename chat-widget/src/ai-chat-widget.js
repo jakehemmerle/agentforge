@@ -366,8 +366,8 @@
         this.sendBtn.disabled = !this.inputEl.value.trim();
     };
 
-    // Initialize when DOM is ready (skip in Node/test environments without document)
-    if (typeof document !== 'undefined' && document.body) {
+    // Initialize when DOM is ready (skip in Node/test environments)
+    if (typeof document !== 'undefined' && typeof module === 'undefined') {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function () {
                 new AiChatWidget();

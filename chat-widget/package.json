@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js",
+    "dev": "node scripts/dev.js",
     "clean": "cd .. && ./injectables/openemr-customize.sh clean",
     "inject": "cd .. && ./injectables/openemr-customize.sh apply"
   },

@@ -1,0 +1,24 @@
+diff --git a/docker/README.md b/docker/README.md
+deleted file mode 100644
+index c5ff503e2..000000000
+--- a/docker/README.md
++++ /dev/null
+@@ -1,2 +0,0 @@
+-
+-Check out [DOCKER_README.md](../DOCKER_README.md)
+diff --git a/docker/development-easy/README.md b/docker/development-easy/README.md
+deleted file mode 100644
+index 4c6063439..000000000
+--- a/docker/development-easy/README.md
++++ /dev/null
+@@ -1,2 +0,0 @@
+-### Easy Development Docker Environment
+-The instructions for The Easy Development Docker environment can be found at [CONTRIBUTING.md](../../CONTRIBUTING.md#code-contributions-local-development).
+diff --git a/docker/production/README.md b/docker/production/README.md
+deleted file mode 100644
+index 615cb0cd9..000000000
+--- a/docker/production/README.md
++++ /dev/null
+@@ -1,2 +0,0 @@
+-
+-Check out [DOCKER_README.md](../../DOCKER_README.md)

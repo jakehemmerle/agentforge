@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import uuid
 from typing import Any
@@ -168,11 +169,33 @@ async def stream(req: ChatRequest):
                 if kind == "on_chat_model_stream":
                     chunk = event.get("data", {}).get("chunk")
                     if chunk and hasattr(chunk, "content") and chunk.content:
-                        yield f"data: {_extract_text(chunk.content)}\n\n"
+                        text = _extract_text(chunk.content)
+                        if text:
+                            # JSON-encode to preserve newlines in SSE framing
+                            yield f"data: {json.dumps(text)}\n\n"
                 elif kind == "on_tool_start":
                     name = event.get("name", "")
                     if name:
                         yield f"data: [calling:{name}]\n\n"
+                elif kind == "on_tool_end":
+                    name = event.get("name", "")
+                    output = event.get("data", {}).get("output")
+                    if name and output:
+                        content = (
+                            output.content
+                            if hasattr(output, "content")
+                            else str(output)
+                        )
+                        if isinstance(content, list):
+                            content = json.dumps(content, indent=2)
+                        elif not isinstance(content, str):
+                            content = str(content)
+                        if len(content) > 2000:
+                            content = content[:2000] + "\n..."
+                        payload = json.dumps(
+                            {"name": name, "content": content}
+                        )
+                        yield f"data: [tool_done]{payload}\n\n"
         except Exception:
             logger.exception("Streaming error for session %s", req.session_id)
             yield "data: [ERROR]\n\n"

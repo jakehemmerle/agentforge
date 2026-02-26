@@ -27,7 +27,10 @@
         send: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
         close: '\u2212',
         spark: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>',
-        clear: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>'
+        clear: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+        wrench: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>',
+        chevron: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>',
+        check: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
     };
 
     function getSessionId() {
@@ -210,27 +213,201 @@
         }
     };
 
-    AiChatWidget.prototype._showToolCall = function (toolName) {
-        this._removeToolCall();
-        var el = document.createElement('div');
-        el.className = 'ai-chat-tool-call';
-        el.id = 'ai-chat-tool-indicator';
-
+    AiChatWidget.prototype._addToolCall = function (toolName) {
         var label = toolName.replace(/_/g, ' ');
         label = label.charAt(0).toUpperCase() + label.slice(1);
+
+        var el = document.createElement('div');
+        el.className = 'ai-chat-tool';
+        el.setAttribute('data-tool', toolName);
         el.innerHTML =
-            '<span class="spinner-border text-secondary" role="status"></span>' +
-            '<span>Searching: ' + escapeHtml(label) + '...</span>';
+            '<div class="ai-chat-tool-header">' +
+                '<span class="ai-chat-tool-icon">' + ICONS.wrench + '</span>' +
+                '<span class="ai-chat-tool-name">' + escapeHtml(label) + '</span>' +
+                '<span class="ai-chat-tool-status"><span class="spinner-border" role="status"></span></span>' +
+                '<span class="ai-chat-tool-chevron">' + ICONS.chevron + '</span>' +
+            '</div>' +
+            '<div class="ai-chat-tool-body"></div>';
+
+        var header = el.querySelector('.ai-chat-tool-header');
+        header.addEventListener('click', function () {
+            el.classList.toggle('expanded');
+        });
+
         this.messagesEl.appendChild(el);
         this._scrollToBottom();
         return el;
     };
 
-    AiChatWidget.prototype._removeToolCall = function () {
-        var el = document.getElementById('ai-chat-tool-indicator');
-        if (el) {
-            el.remove();
+    AiChatWidget.prototype._updateToolResult = function (toolName, content) {
+        // Find the last tool call element matching this name
+        var tools = this.messagesEl.querySelectorAll('.ai-chat-tool[data-tool="' + toolName + '"]');
+        if (!tools.length) { return; }
+        var el = tools[tools.length - 1];
+
+        // Replace spinner with checkmark
+        var status = el.querySelector('.ai-chat-tool-status');
+        if (status) {
+            status.innerHTML = '<span class="ai-chat-tool-check">' + ICONS.check + '</span>';
         }
+
+        // Populate the body with a pretty-rendered result
+        var body = el.querySelector('.ai-chat-tool-body');
+        if (body) {
+            body.innerHTML = this._renderToolBody(toolName, content);
+        }
+    };
+
+    AiChatWidget.prototype._renderToolBody = function (toolName, content) {
+        var data;
+        try {
+            data = JSON.parse(content);
+        } catch (e) {
+            return '<pre class="ai-chat-tool-raw">' + escapeHtml(content) + '</pre>';
+        }
+
+        switch (toolName) {
+            case 'find_appointments': return this._renderAppointments(data);
+            case 'get_encounter_context': return this._renderEncounter(data);
+            case 'draft_encounter_note': return this._renderDraftNote(data);
+            case 'validate_claim_ready_completeness': return this._renderValidation(data);
+            default:
+                return '<pre class="ai-chat-tool-raw">' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+        }
+    };
+
+    AiChatWidget.prototype._renderAppointments = function (data) {
+        var appts = data.appointments || [];
+        if (!appts.length) {
+            var msg = data.message || 'No appointments found';
+            return '<div class="ai-chat-tr-empty">' + escapeHtml(msg) + '</div>';
+        }
+        var html = '<div class="ai-chat-tr-count">' + appts.length + ' appointment' + (appts.length !== 1 ? 's' : '') + '</div>';
+        html += '<table class="ai-chat-tr-table"><thead><tr><th>Time</th><th>Patient</th><th>Status</th><th>Category</th></tr></thead><tbody>';
+        for (var i = 0; i < appts.length; i++) {
+            var a = appts[i];
+            var time = (a.start_time || '').substring(0, 5);
+            var statusCls = (a.status_label || '').toLowerCase().indexOf('open') >= 0 ? ' ai-chat-tr-open' :
+                            (a.status_label || '').toLowerCase().indexOf('arrived') >= 0 ? ' ai-chat-tr-arrived' :
+                            (a.status_label || '').toLowerCase().indexOf('checked') >= 0 ? ' ai-chat-tr-done' :
+                            (a.status_label || '').toLowerCase().indexOf('no show') >= 0 ? ' ai-chat-tr-noshow' : '';
+            html += '<tr><td>' + escapeHtml(time) + '</td>'
+                + '<td>' + escapeHtml(a.patient_name || '') + '</td>'
+                + '<td class="' + statusCls + '">' + escapeHtml(a.status_label || a.status || '') + '</td>'
+                + '<td>' + escapeHtml(a.category || '') + '</td></tr>';
+        }
+        html += '</tbody></table>';
+        if (data.data_warnings && data.data_warnings.length) {
+            html += '<div class="ai-chat-tr-warn">' + escapeHtml(data.data_warnings.join('; ')) + '</div>';
+        }
+        return html;
+    };
+
+    AiChatWidget.prototype._renderEncounter = function (data) {
+        var html = '';
+        var p = data.patient || {};
+        var e = data.encounter || {};
+        html += '<div class="ai-chat-tr-row"><strong>' + escapeHtml(p.name || 'Patient') + '</strong>';
+        if (p.dob) { html += ' &middot; DOB ' + escapeHtml(p.dob); }
+        if (p.sex) { html += ' &middot; ' + escapeHtml(p.sex); }
+        html += '</div>';
+        html += '<div class="ai-chat-tr-row">' + escapeHtml(e.date || '') + ' &mdash; ' + escapeHtml(e.reason || 'Encounter') + '</div>';
+        var cc = data.clinical_context || {};
+        if (cc.active_problems && cc.active_problems.length) {
+            html += '<div class="ai-chat-tr-label">Problems</div><ul class="ai-chat-tr-list">';
+            for (var i = 0; i < cc.active_problems.length; i++) {
+                var prob = cc.active_problems[i];
+                html += '<li>' + escapeHtml(prob.description || '') + (prob.code ? ' <span class="ai-chat-tr-code">' + escapeHtml(prob.code) + '</span>' : '') + '</li>';
+            }
+            html += '</ul>';
+        }
+        if (cc.medications && cc.medications.length) {
+            html += '<div class="ai-chat-tr-label">Medications</div><ul class="ai-chat-tr-list">';
+            for (var i = 0; i < cc.medications.length; i++) {
+                var med = cc.medications[i];
+                html += '<li>' + escapeHtml(med.drug_name || '') + (med.dose ? ' ' + escapeHtml(med.dose) : '') + (med.frequency ? ', ' + escapeHtml(med.frequency) : '') + '</li>';
+            }
+            html += '</ul>';
+        }
+        if (cc.allergies && cc.allergies.length) {
+            html += '<div class="ai-chat-tr-label">Allergies</div><ul class="ai-chat-tr-list">';
+            for (var i = 0; i < cc.allergies.length; i++) {
+                var al = cc.allergies[i];
+                html += '<li>' + escapeHtml(al.substance || '') + (al.reaction ? ' &rarr; ' + escapeHtml(al.reaction) : '') + '</li>';
+            }
+            html += '</ul>';
+        }
+        if (cc.vitals) {
+            var v = cc.vitals;
+            var parts = [];
+            if (v.bp) parts.push('BP ' + v.bp);
+            if (v.hr) parts.push('HR ' + v.hr);
+            if (v.temp) parts.push('Temp ' + v.temp);
+            if (v.spo2) parts.push('SpO2 ' + v.spo2 + '%');
+            if (parts.length) {
+                html += '<div class="ai-chat-tr-label">Vitals</div><div class="ai-chat-tr-row">' + escapeHtml(parts.join(' &middot; ')) + '</div>';
+            }
+        }
+        if (data.data_warnings && data.data_warnings.length) {
+            html += '<div class="ai-chat-tr-warn">' + escapeHtml(data.data_warnings.join('; ')) + '</div>';
+        }
+        return html;
+    };
+
+    AiChatWidget.prototype._renderDraftNote = function (data) {
+        var html = '';
+        var note = data.draft_note || {};
+        html += '<div class="ai-chat-tr-row"><strong>' + escapeHtml((note.type || 'Note').toUpperCase()) + '</strong>';
+        if (note.patient_name) { html += ' &mdash; ' + escapeHtml(note.patient_name); }
+        html += '</div>';
+        if (note.content) {
+            var c = note.content;
+            if (c.subjective) { html += '<div class="ai-chat-tr-label">Subjective</div><div class="ai-chat-tr-text">' + escapeHtml(c.subjective) + '</div>'; }
+            if (c.objective) { html += '<div class="ai-chat-tr-label">Objective</div><div class="ai-chat-tr-text">' + escapeHtml(c.objective) + '</div>'; }
+            if (c.assessment) { html += '<div class="ai-chat-tr-label">Assessment</div><div class="ai-chat-tr-text">' + escapeHtml(c.assessment) + '</div>'; }
+            if (c.plan) { html += '<div class="ai-chat-tr-label">Plan</div><div class="ai-chat-tr-text">' + escapeHtml(c.plan) + '</div>'; }
+            if (c.narrative) { html += '<div class="ai-chat-tr-text">' + escapeHtml(c.narrative) + '</div>'; }
+            if (c.summary) { html += '<div class="ai-chat-tr-text">' + escapeHtml(c.summary) + '</div>'; }
+        } else if (note.full_text) {
+            html += '<div class="ai-chat-tr-text">' + escapeHtml(note.full_text) + '</div>';
+        }
+        if (data.warnings && data.warnings.length) {
+            for (var i = 0; i < data.warnings.length; i++) {
+                html += '<div class="ai-chat-tr-warn">' + escapeHtml(data.warnings[i]) + '</div>';
+            }
+        }
+        if (data.disclaimer) {
+            html += '<div class="ai-chat-tr-disclaimer">' + escapeHtml(data.disclaimer) + '</div>';
+        }
+        return html;
+    };
+
+    AiChatWidget.prototype._renderValidation = function (data) {
+        var html = '';
+        var ready = data.ready;
+        html += '<div class="ai-chat-tr-status ' + (ready ? 'ai-chat-tr-pass' : 'ai-chat-tr-fail') + '">'
+            + (ready ? 'Ready for submission' : 'Not ready') + '</div>';
+        var checks = (data.errors || []).concat(data.warnings || []);
+        if (checks.length) {
+            html += '<div class="ai-chat-tr-checks">';
+            for (var i = 0; i < checks.length; i++) {
+                var c = checks[i];
+                var icon = c.severity === 'error' ? '<span class="ai-chat-tr-x">&times;</span>' : '<span class="ai-chat-tr-bang">!</span>';
+                html += '<div class="ai-chat-tr-check-item">' + icon + ' ' + escapeHtml(c.message || c.check) + '</div>';
+            }
+            html += '</div>';
+        }
+        var s = data.summary || {};
+        if (s.dx_codes && s.dx_codes.length) {
+            html += '<div class="ai-chat-tr-row">Dx: ' + s.dx_codes.map(function(c) { return '<span class="ai-chat-tr-code">' + escapeHtml(c) + '</span>'; }).join(' ') + '</div>';
+        }
+        if (s.cpt_codes && s.cpt_codes.length) {
+            html += '<div class="ai-chat-tr-row">CPT: ' + s.cpt_codes.map(function(c) { return '<span class="ai-chat-tr-code">' + escapeHtml(c) + '</span>'; }).join(' ') + '</div>';
+        }
+        if (s.total_charges) {
+            html += '<div class="ai-chat-tr-row">Charges: $' + escapeHtml(String(s.total_charges)) + '</div>';
+        }
+        return html;
     };
 
     AiChatWidget.prototype._scrollToBottom = function () {
@@ -260,6 +437,7 @@
         var typingEl = this._showTyping();
         var responseEl = null;
         var responseText = '';
+        var segmentText = '';
 
         this.abortController = new AbortController();
 
@@ -302,33 +480,52 @@
 
                 if (data === '[ERROR]') {
                     self._removeTyping();
-                    self._removeToolCall();
                     if (!responseEl) {
                         self._addMessage('assistant', 'Sorry, something went wrong while processing your request. Please try again.');
                     }
                     return false;
                 }
 
-                // Tool call notification
+                // Tool call start — reset responseEl so post-tool text
+                // gets its own element positioned after the tool call
                 var toolMatch = data.match(/^\[calling:(.+)\]$/);
                 if (toolMatch) {
                     self._removeTyping();
-                    self._showToolCall(toolMatch[1]);
+                    responseEl = null;
+                    segmentText = '';
+                    self._addToolCall(toolMatch[1]);
                     return false;
                 }
 
-                // Token
+                // Tool call result
+                if (data.indexOf('[tool_done]') === 0) {
+                    try {
+                        var info = JSON.parse(data.substring(11));
+                        self._updateToolResult(info.name, info.content);
+                    } catch (e) { /* ignore malformed result */ }
+                    return false;
+                }
+
+                // Text token (JSON-encoded by server to preserve newlines)
+                var text = data;
+                if (data.charAt(0) === '"') {
+                    try { text = JSON.parse(data); } catch (e) { /* use raw */ }
+                }
+
+                if (!text) { return false; }
+
                 self._removeTyping();
-                self._removeToolCall();
 
                 if (!responseEl) {
                     responseEl = document.createElement('div');
                     responseEl.className = 'ai-chat-msg ai-chat-msg-assistant';
                     self.messagesEl.appendChild(responseEl);
+                    segmentText = '';
                 }
 
-                responseText += data;
-                responseEl.innerHTML = marked.parse(responseText);
+                responseText += text;
+                segmentText += text;
+                responseEl.innerHTML = marked.parse(segmentText);
                 self._scrollToBottom();
                 return false;
             }
@@ -368,7 +565,6 @@
             return processChunk();
         }).catch(function (err) {
             self._removeTyping();
-            self._removeToolCall();
 
             if (err.name === 'AbortError') {
                 self.isStreaming = false;
@@ -424,7 +620,6 @@
 
     AiChatWidget.prototype._finishStream = function (responseEl, responseText) {
         this._removeTyping();
-        this._removeToolCall();
 
         if (responseText) {
             this.messages.push({ role: 'assistant', content: responseText });
@@ -459,6 +654,28 @@
         if (!handle) { return; }
 
         var startX, startY, startW, startH;
+        var overlay = null;
+
+        function createOverlay() {
+            overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;cursor:nwse-resize;';
+            document.body.appendChild(overlay);
+        }
+
+        function removeOverlay() {
+            if (overlay) {
+                overlay.remove();
+                overlay = null;
+            }
+        }
+
+        function saveSize() {
+            var w = parseInt(self.panel.style.width, 10);
+            var h = parseInt(self.panel.style.height, 10);
+            if (w && h) {
+                sessionStorage.setItem('__ai_chat_panel_size', JSON.stringify({ width: w, height: h }));
+            }
+        }
 
         function onMouseMove(e) {
             var dx = startX - e.clientX;
@@ -472,11 +689,8 @@
         function onMouseUp() {
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
-            var w = parseInt(self.panel.style.width, 10);
-            var h = parseInt(self.panel.style.height, 10);
-            if (w && h) {
-                sessionStorage.setItem('__ai_chat_panel_size', JSON.stringify({ width: w, height: h }));
-            }
+            removeOverlay();
+            saveSize();
         }
 
         handle.addEventListener('mousedown', function (e) {
@@ -485,6 +699,7 @@
             startY = e.clientY;
             startW = self.panel.offsetWidth;
             startH = self.panel.offsetHeight;
+            createOverlay();
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         });
@@ -503,11 +718,8 @@
         function onTouchEnd() {
             document.removeEventListener('touchmove', onTouchMove);
             document.removeEventListener('touchend', onTouchEnd);
-            var w = parseInt(self.panel.style.width, 10);
-            var h = parseInt(self.panel.style.height, 10);
-            if (w && h) {
-                sessionStorage.setItem('__ai_chat_panel_size', JSON.stringify({ width: w, height: h }));
-            }
+            removeOverlay();
+            saveSize();
         }
 
         handle.addEventListener('touchstart', function (e) {
@@ -517,6 +729,7 @@
             startY = touch.clientY;
             startW = self.panel.offsetWidth;
             startH = self.panel.offsetHeight;
+            createOverlay();
             document.addEventListener('touchmove', onTouchMove);
             document.addEventListener('touchend', onTouchEnd);
         });

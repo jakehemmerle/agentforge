@@ -91,7 +91,10 @@ jobs:
           PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
           GOOGLE_CREDENTIALS: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
         run: |
-          uv sync
+          uv sync --python-preference system
+          uv export --no-hashes > requirements.txt
+          python -m venv venv
+          venv/bin/pip install -r requirements.txt
 
           pulumi login gs://openemr-agent-staging-pulumi
           pulumi stack select ${{ env.PULUMI_STACK }}

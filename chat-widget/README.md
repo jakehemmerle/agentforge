@@ -8,6 +8,18 @@ AI chat widget injected into OpenEMR's main tab interface.
 - Node >= 22 (integration tests, dev runner)
 - OpenEMR submodule checked out at `openemr/` (integration/dev only)
 
+## Build
+
+The widget uses esbuild to bundle `src/ai-chat-widget.js` + `marked`
+(markdown renderer) into a single browser-ready file at `dist/ai-chat-widget.js`.
+
+```bash
+npm run build
+```
+
+`dist/` is gitignored — the build runs automatically during `npm run dev`
+and `openemr-customize.sh apply`.
+
 ## Unit Tests
 
 No submodule required.
@@ -69,9 +81,10 @@ OpenEMR + AI Agent stack, and a file watcher for fast widget iteration.
    npm run dev
    ```
 
-   This does an initial copy of `src/ai-chat-widget.js` and
-   `src/ai-chat-widget.css` into the submodule, then watches `src/` for
-   changes and re-copies automatically.
+   This runs esbuild to produce `dist/ai-chat-widget.js`, copies it
+   along with `src/ai-chat-widget.css` and `src/dev-reload.js` into
+   the submodule, then watches `src/` for changes and rebuilds/copies
+   automatically.
 
 3. **Open the app** — navigate to `http://localhost:8300`, log in
    (admin / pass), and the blue chat button should appear in the
@@ -83,9 +96,10 @@ With `npm run dev` running, changes auto-apply without a page refresh:
 
 - **CSS changes** swap the stylesheet in-place (~1.5s). No DOM rebuild,
   no lost chat state.
-- **JS changes** save widget state (messages, open/closed) to
-  `sessionStorage`, tear down the widget, and re-execute the script.
-  Chat history and panel state are restored automatically.
+- **JS changes** trigger esbuild, then save widget state (messages,
+  open/closed, panel size) to `sessionStorage`, tear down the widget,
+  and re-execute the script. Chat history and panel state are restored
+  automatically.
 
 The dev server on port 8351 serves a `/version` endpoint. The
 `dev-reload.js` client (loaded only when the `AI_CHAT_DEV_RELOAD` env
@@ -102,8 +116,8 @@ Stop the watcher with Ctrl-C. Stop the local environment with
 
 ## OpenEMR Build Pipeline (why integration tests need a full install)
 
-The chat widget itself has no build step — it's plain JS/CSS copied into the
-submodule. But the integration test verifies that OpenEMR's gulp build still
+The chat widget has a lightweight esbuild step (bundles `marked` into an IIFE),
+then JS/CSS are copied into the submodule. The integration test verifies that OpenEMR's gulp build still
 succeeds after injection, and that build has a specific dependency chain:
 
 1. `npm install` fetches regular npm packages (bootstrap, jquery, etc.)
@@ -126,6 +140,6 @@ zip archives on first run.
 
 | Source | Destination (inside `openemr/`) |
 |--------|-------------------------------|
-| `src/ai-chat-widget.js` | `interface/main/tabs/js/ai-chat-widget.js` |
+| `dist/ai-chat-widget.js` | `interface/main/tabs/js/ai-chat-widget.js` |
 | `src/ai-chat-widget.css` | `interface/main/tabs/css/ai-chat-widget.css` |
 | `src/dev-reload.js` | `interface/main/tabs/js/dev-reload.js` |

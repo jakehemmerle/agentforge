@@ -4,6 +4,7 @@
   "private": true,
   "description": "AI Chat Widget for OpenEMR",
   "scripts": {
+    "build": "node scripts/build.js",
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js",
     "dev": "node scripts/dev.js",
@@ -11,7 +12,11 @@
     "inject": "cd .. && ./injectables/openemr-customize.sh apply"
   },
   "devDependencies": {
+    "esbuild": "^0.27.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0"
+  },
+  "dependencies": {
+    "marked": "^17.0.3"
   }
 }

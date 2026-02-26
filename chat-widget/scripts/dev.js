@@ -4,22 +4,30 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const { execFileSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const SRC = path.join(ROOT, "chat-widget", "src");
+const DIST = path.join(ROOT, "chat-widget", "dist");
+
+const JS_DEST = path.join(ROOT, "openemr", "interface", "main", "tabs", "js");
+const CSS_DEST = path.join(ROOT, "openemr", "interface", "main", "tabs", "css");
 
 const TARGETS = [
   {
-    src: "ai-chat-widget.js",
-    dest: path.join(ROOT, "openemr", "interface", "main", "tabs", "js"),
+    src: path.join(DIST, "ai-chat-widget.js"),
+    dest: path.join(JS_DEST, "ai-chat-widget.js"),
+    label: "dist/ai-chat-widget.js",
   },
   {
-    src: "ai-chat-widget.css",
-    dest: path.join(ROOT, "openemr", "interface", "main", "tabs", "css"),
+    src: path.join(SRC, "ai-chat-widget.css"),
+    dest: path.join(CSS_DEST, "ai-chat-widget.css"),
+    label: "src/ai-chat-widget.css",
   },
   {
-    src: "dev-reload.js",
-    dest: path.join(ROOT, "openemr", "interface", "main", "tabs", "js"),
+    src: path.join(SRC, "dev-reload.js"),
+    dest: path.join(JS_DEST, "dev-reload.js"),
+    label: "src/dev-reload.js",
   },
 ];
 
@@ -33,26 +41,33 @@ if (!fs.existsSync(openemrDir)) {
 }
 
 for (const t of TARGETS) {
-  if (!fs.existsSync(t.dest)) {
+  const destDir = path.dirname(t.dest);
+  if (!fs.existsSync(destDir)) {
     console.error(
-      `Error: ${path.relative(ROOT, t.dest)} does not exist.\n` +
+      `Error: ${path.relative(ROOT, destDir)} does not exist.\n` +
         "Run  ./injectables/openemr-customize.sh apply  first to set up the overlay directories."
     );
     process.exit(1);
   }
 }
 
+function runBuild() {
+  console.log("  running esbuild…");
+  execFileSync(process.execPath, [path.join(__dirname, "build.js")], {
+    stdio: "inherit",
+  });
+}
+
 function copyAll() {
   for (const t of TARGETS) {
-    const srcPath = path.join(SRC, t.src);
-    const destPath = path.join(t.dest, t.src);
-    fs.copyFileSync(srcPath, destPath);
-    console.log(`copied ${t.src} → ${path.relative(ROOT, destPath)}`);
+    fs.copyFileSync(t.src, t.dest);
+    console.log(`  copied ${t.label} → ${path.relative(ROOT, t.dest)}`);
   }
 }
 
-// Initial copy
-console.log("chat-widget dev: initial copy…");
+// Initial build + copy
+console.log("chat-widget dev: initial build + copy…");
+runBuild();
 copyAll();
 
 // Version tracking for hot-reload
@@ -68,6 +83,9 @@ fs.watch(SRC, (_event, filename) => {
   debounce = setTimeout(() => {
     debounce = null;
     console.log(`\nchange detected: ${filename}`);
+    if (filename.endsWith(".js") && filename !== "dev-reload.js") {
+      runBuild();
+    }
     copyAll();
     if (filename.endsWith(".css")) {
       cssVersion++;

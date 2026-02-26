@@ -242,15 +242,24 @@ cmd_apply_overlay() {
     cp -R "$overlay_abs/." "$submodule_abs/"
   fi
 
-  # Copy chat-widget source into OpenEMR paths
-  local widget_dir="$root/chat-widget/src"
-  if [[ -d "$widget_dir" ]]; then
-    echo "Copying chat-widget sources into $submodule_path"
+  # Copy chat-widget assets into OpenEMR paths
+  local widget_src="$root/chat-widget/src"
+  local widget_dist="$root/chat-widget/dist"
+  if [[ -d "$widget_src" ]]; then
+    echo "Copying chat-widget assets into $submodule_path"
     mkdir -p "$submodule_abs/interface/main/tabs/js"
     mkdir -p "$submodule_abs/interface/main/tabs/css"
-    cp "$widget_dir/ai-chat-widget.js" "$submodule_abs/interface/main/tabs/js/"
-    cp "$widget_dir/ai-chat-widget.css" "$submodule_abs/interface/main/tabs/css/"
-    cp "$widget_dir/dev-reload.js" "$submodule_abs/interface/main/tabs/js/"
+
+    # JS comes from dist/ (bundled); build if dist/ missing
+    if [[ ! -f "$widget_dist/ai-chat-widget.js" ]]; then
+      echo "  dist/ not found — running npm build…"
+      (cd "$root/chat-widget" && npm run build)
+    fi
+    cp "$widget_dist/ai-chat-widget.js" "$submodule_abs/interface/main/tabs/js/"
+
+    # CSS + dev-reload from src/ (no bundling needed)
+    cp "$widget_src/ai-chat-widget.css" "$submodule_abs/interface/main/tabs/css/"
+    cp "$widget_src/dev-reload.js" "$submodule_abs/interface/main/tabs/js/"
   fi
 
   echo "Overlay applied."

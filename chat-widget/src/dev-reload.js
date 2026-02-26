@@ -42,9 +42,17 @@
         }
         var panel = document.querySelector('.ai-chat-panel');
         var isOpen = panel ? panel.classList.contains('open') : false;
+        var panelSize = null;
+        if (panel && panel.style.width && panel.style.height) {
+            panelSize = {
+                width: parseInt(panel.style.width, 10),
+                height: parseInt(panel.style.height, 10)
+            };
+        }
         sessionStorage.setItem('__dev_reload_state', JSON.stringify({
             messages: msgs,
-            isOpen: isOpen
+            isOpen: isOpen,
+            panelSize: panelSize
         }));
     }
 

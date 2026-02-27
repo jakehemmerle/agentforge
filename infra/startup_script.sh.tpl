@@ -42,6 +42,15 @@ if [ -b "$DISK_DEVICE" ]; then
   mount /mnt/disks/openemr-data || mount -a
   DATA_ROOT="/mnt/disks/openemr-data"
 fi
+
+# Ensure persistent directories for OpenEMR crypto keys exist.
+# These must survive container rebuilds so the drive keys stay in sync
+# with encrypted values in Cloud SQL (oauth2key, oauth2passphrase).
+SITE_DIR="$DATA_ROOT/openemr-site"
+mkdir -p "$SITE_DIR/documents/certificates"
+mkdir -p "$SITE_DIR/documents/logs_and_misc/methods"
+chown -R 1000:101 "$SITE_DIR"
+
 # Helper: fetch latest secret version from Secret Manager.
 get_access_token() {
   curl -sS -H "Metadata-Flavor: Google"     "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token"     | jq -r '.access_token'
@@ -176,6 +185,9 @@ services:
       OPENEMR_SETTING_oauth_password_grant: "3"
       AI_AGENT_URL: "${AI_AGENT_EXTERNAL_URL}"
       AI_AGENT_API_KEY: "${AI_AGENT_API_KEY}"
+    volumes:
+      - ${DATA_ROOT}/openemr-site/documents/certificates:/var/www/localhost/htdocs/openemr/sites/default/documents/certificates
+      - ${DATA_ROOT}/openemr-site/documents/logs_and_misc/methods:/var/www/localhost/htdocs/openemr/sites/default/documents/logs_and_misc/methods
     restart: always
 
   ai-agent:

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from typing import Any
 
 import httpx
@@ -326,9 +328,42 @@ async def validate_claim_ready_completeness(
         fetch_data_warnings.append("billing_fetch_failed: request timed out")
     except (httpx.ConnectError, httpx.RequestError, OSError) as exc:
         logger.warning("Failed to fetch billing data: %s", exc)
-        fetch_data_warnings.append(
-            "billing_fetch_failed: unexpected error retrieving billing codes"
-        )
+        # Integration tests run without a standalone ai-agent HTTP server.
+        # Fall back to the same internal DB query used by /internal/billing.
+        agent_base_url = settings.agent_base_url.rstrip("/")
+        use_integration_fallback = bool(
+            os.environ.get("INTEGRATION_TEST")
+        ) and agent_base_url in {"http://localhost:8350", "http://127.0.0.1:8350"}
+        if use_integration_fallback:
+            try:
+                from ai_agent.server import _fetch_billing_rows
+
+                billing_rows = await asyncio.to_thread(
+                    _fetch_billing_rows,
+                    db_host=settings.db_host,
+                    db_port=settings.db_port,
+                    db_name=settings.db_name,
+                    db_user=settings.db_user,
+                    db_password=settings.db_password,
+                    encounter_id=encounter_id,
+                    patient_id=patient_id,
+                    db_unix_socket=settings.db_unix_socket,
+                )
+                logger.info(
+                    "Fetched billing data via integration fallback for encounter %s",
+                    encounter_id,
+                )
+            except Exception as fallback_exc:
+                logger.warning(
+                    "Integration fallback billing fetch failed: %s", fallback_exc
+                )
+                fetch_data_warnings.append(
+                    "billing_fetch_failed: unexpected error retrieving billing codes"
+                )
+        else:
+            fetch_data_warnings.append(
+                "billing_fetch_failed: unexpected error retrieving billing codes"
+            )
 
     client = OpenEMRClient.from_settings()
 

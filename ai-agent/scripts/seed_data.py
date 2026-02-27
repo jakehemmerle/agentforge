@@ -1774,6 +1774,11 @@ def main() -> None:
 
     try:
         with conn.cursor() as cur:
+            # Relax strict mode for Cloud SQL compatibility (allows 0000-00-00 dates
+            # used by OpenEMR's calendar schema defaults).
+            cur.execute(
+                "SET SESSION sql_mode = REPLACE(REPLACE(@@sql_mode, 'NO_ZERO_DATE', ''), 'NO_ZERO_IN_DATE', '')"
+            )
             if args.clean:
                 clean_seed_data(cur)
                 conn.commit()

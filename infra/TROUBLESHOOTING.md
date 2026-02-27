@@ -109,7 +109,54 @@ Reference:
 
 - `openemr/library/classes/Installer.class.php` (`initialize_dumpfile_list`)
 
-## 8) Security note
+## 8) OAuth2 "Security error - problem with authorization server keys"
+
+Symptom:
+
+- OAuth2 endpoints return 500 with `"Security error - problem with authorization server keys"`
+- Apache error log shows `Decryption failed HMAC Authentication!` and
+  `oauth2 encryption key was blank after it was decrypted`
+
+Cause:
+
+OpenEMR uses a dual-key encryption system: drive keys (files on disk) encrypt
+values stored in the database, and vice versa. The `oauth2key` and
+`oauth2passphrase` rows in the `keys` table are encrypted using drive key files
+at `sites/default/documents/logs_and_misc/methods/`. If the container is
+rebuilt (new image deploy, VM reset) without persisting those files, new drive
+keys are generated that cannot decrypt the old database values.
+
+Prevention:
+
+The startup script mounts the crypto directories to the persistent data disk so
+drive keys survive container rebuilds. If this mount is missing, restore it in
+`startup_script.sh.tpl`.
+
+Recovery (if mounts were not in place):
+
+```bash
+gcloud compute ssh openemr-staging-vm --zone us-central1-a --project openemr-agent-staging --command '
+# 1. Delete stale encrypted rows
+sudo docker exec openemr-openemr-1 mysql --skip-ssl -hcloud-sql-proxy -P3306 \
+  -uopenemr -p"$DB_PASSWORD" openemr \
+  -e "DELETE FROM \`keys\` WHERE name IN ('\''oauth2key'\'', '\''oauth2passphrase'\'');"
+
+# 2. Delete stale key files
+sudo docker exec openemr-openemr-1 rm -f \
+  /var/www/localhost/htdocs/openemr/sites/default/documents/certificates/oaprivate.key \
+  /var/www/localhost/htdocs/openemr/sites/default/documents/certificates/oapublic.key
+
+# 3. Trigger regeneration via non-OAuth API call
+curl -s http://localhost/apis/default/fhir/metadata > /dev/null
+
+# 4. Verify
+curl -s http://localhost/oauth2/default/registration \
+  -X POST -H "Content-Type: application/json" \
+  -d "{\"application_type\":\"private\",\"client_name\":\"probe\",\"redirect_uris\":[\"https://localhost\"],\"scope\":\"openid\"}"
+'
+```
+
+## 9) Security note
 
 Never enable `set -x` in VM startup scripts that fetch or render secrets. It can
 write secret values to serial logs.

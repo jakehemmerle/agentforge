@@ -76,7 +76,12 @@ def test_route_returns_tools_for_tool_calls():
     msg = AIMessage(
         content="",
         tool_calls=[
-            {"name": "find_appointments", "args": {}, "id": "call_1", "type": "tool_call"}
+            {
+                "name": "find_appointments",
+                "args": {},
+                "id": "call_1",
+                "type": "tool_call",
+            }
         ],
     )
     state: AgentState = {
@@ -113,9 +118,7 @@ def test_route_handles_non_ai_message():
 async def test_call_llm_returns_messages_key():
     """call_llm should return a dict with 'messages' key."""
     with patch("ai_agent.agent.model_with_tools") as mock_model:
-        mock_model.ainvoke = AsyncMock(
-            return_value=AIMessage(content="Hello there")
-        )
+        mock_model.ainvoke = AsyncMock(return_value=AIMessage(content="Hello there"))
         result = await call_llm(
             {"messages": [HumanMessage(content="hi")], "user_id": "u1", "error": None}
         )
@@ -127,11 +130,13 @@ async def test_call_llm_returns_messages_key():
 async def test_call_llm_includes_system_prompt():
     """call_llm should prepend a SystemMessage containing 'clinical assistant'."""
     with patch("ai_agent.agent.model_with_tools") as mock_model:
-        mock_model.ainvoke = AsyncMock(
-            return_value=AIMessage(content="response")
-        )
+        mock_model.ainvoke = AsyncMock(return_value=AIMessage(content="response"))
         await call_llm(
-            {"messages": [HumanMessage(content="hello")], "user_id": "u1", "error": None}
+            {
+                "messages": [HumanMessage(content="hello")],
+                "user_id": "u1",
+                "error": None,
+            }
         )
     call_args = mock_model.ainvoke.call_args[0][0]
     assert isinstance(call_args[0], SystemMessage)
@@ -143,12 +148,14 @@ async def test_call_llm_propagates_llm_error():
     import pytest as _pytest
 
     with patch("ai_agent.agent.model_with_tools") as mock_model:
-        mock_model.ainvoke = AsyncMock(
-            side_effect=RuntimeError("LLM unavailable")
-        )
+        mock_model.ainvoke = AsyncMock(side_effect=RuntimeError("LLM unavailable"))
         with _pytest.raises(RuntimeError, match="LLM unavailable"):
             await call_llm(
-                {"messages": [HumanMessage(content="hi")], "user_id": "u1", "error": None}
+                {
+                    "messages": [HumanMessage(content="hi")],
+                    "user_id": "u1",
+                    "error": None,
+                }
             )
 
 
@@ -169,9 +176,7 @@ async def test_call_llm_with_empty_messages():
         mock_model.ainvoke = AsyncMock(
             return_value=AIMessage(content="I'm here to help")
         )
-        await call_llm(
-            {"messages": [], "user_id": "u1", "error": None}
-        )
+        await call_llm({"messages": [], "user_id": "u1", "error": None})
     call_args = mock_model.ainvoke.call_args[0][0]
     # Only the SystemMessage should be in the list
     assert len(call_args) == 1

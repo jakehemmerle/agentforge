@@ -18,6 +18,7 @@ pytestmark = pytest.mark.unit
 
 # -- helpers -------------------------------------------------------------------
 
+
 def _make_appointment(**overrides: Any) -> dict[str, Any]:
     base = {
         "pc_eid": 1,
@@ -37,7 +38,6 @@ def _make_appointment(**overrides: Any) -> dict[str, Any]:
     }
     base.update(overrides)
     return base
-
 
 
 # -- _format_appointment -------------------------------------------------------
@@ -86,7 +86,9 @@ async def test_search_by_patient_id(mock_appointment_client):
 async def test_search_by_patient_name_single_match(mock_appointment_client):
     patients = [make_patient()]
     appts = [_make_appointment()]
-    client = mock_appointment_client(patients=patients, patient_appointments={10: appts})
+    client = mock_appointment_client(
+        patients=patients, patient_appointments={10: appts}
+    )
 
     result = await _find_appointments_impl(client, patient_name="Doe")
 

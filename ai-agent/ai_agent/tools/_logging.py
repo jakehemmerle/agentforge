@@ -16,19 +16,42 @@ from ai_agent.openemr_client import OpenEMRAuthError
 logger = logging.getLogger("ai_agent.tools")
 
 # PHI keys that always get redacted to "[REDACTED]"
-_PHI_KEYS = frozenset({
-    "fname", "lname", "mname", "DOB", "ss",
-    "street", "city", "state", "postal_code",
-    "phone_cell", "phone_home", "phone_biz", "email",
-    "pubpid", "subscriber_fname", "subscriber_lname",
-    "subscriber_DOB", "policy_number",
-})
+_PHI_KEYS = frozenset(
+    {
+        "fname",
+        "lname",
+        "mname",
+        "DOB",
+        "ss",
+        "street",
+        "city",
+        "state",
+        "postal_code",
+        "phone_cell",
+        "phone_home",
+        "phone_biz",
+        "email",
+        "pubpid",
+        "subscriber_fname",
+        "subscriber_lname",
+        "subscriber_DOB",
+        "policy_number",
+    }
+)
 
 # Output keys containing nested PHI data (type-dependent handling)
-_PHI_OUTPUT_KEYS = frozenset({
-    "patient", "medications", "allergies", "vitals",
-    "problems", "notes", "draft", "narrative",
-})
+_PHI_OUTPUT_KEYS = frozenset(
+    {
+        "patient",
+        "medications",
+        "allergies",
+        "vitals",
+        "problems",
+        "notes",
+        "draft",
+        "narrative",
+    }
+)
 
 
 def _sanitize_dict(data: dict[str, Any], depth: int = 0) -> dict[str, Any]:

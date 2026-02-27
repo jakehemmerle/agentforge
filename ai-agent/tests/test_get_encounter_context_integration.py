@@ -139,13 +139,21 @@ class TestOutputShape:
                 patient_id=PATIENT_ID_COMPLETE,
                 encounter_id=ENCOUNTER_COMPLETE,
             )
-        assert {"encounter", "patient", "clinical_context", "billing_status", "data_warnings"} == set(
-            result.keys()
-        )
+        assert {
+            "encounter",
+            "patient",
+            "clinical_context",
+            "billing_status",
+            "data_warnings",
+        } == set(result.keys())
         clinical = result["clinical_context"]
-        assert {"active_problems", "medications", "allergies", "vitals", "existing_notes"} == set(
-            clinical.keys()
-        )
+        assert {
+            "active_problems",
+            "medications",
+            "allergies",
+            "vitals",
+            "existing_notes",
+        } == set(clinical.keys())
 
 
 # ---------------------------------------------------------------------------

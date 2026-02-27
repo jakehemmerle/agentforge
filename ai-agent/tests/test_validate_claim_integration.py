@@ -58,6 +58,7 @@ def ensure_claim_insurance_state(db_conn, db_cleanup):
 
     saved_rows = clear_insurance_for_patient(db_conn, PATIENT_ID_INCOMPLETE)
     if saved_rows:
+
         def _restore_deleted_rows() -> None:
             cur = db_conn.cursor()
             for row in saved_rows:
@@ -88,7 +89,9 @@ async def _fetch_billing_via_endpoint(
     settings = settings_override or get_settings()
     with patch("ai_agent.server.get_settings", return_value=settings):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
             resp = await client.get(
                 "/internal/billing",
                 params={"encounter_id": encounter_id, "patient_id": patient_id},
@@ -161,7 +164,9 @@ class TestInternalBillingEndpoint:
 
         with patch("ai_agent.server.get_settings", return_value=settings):
             transport = httpx.ASGITransport(app=app)
-            async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            async with httpx.AsyncClient(
+                transport=transport, base_url="http://test"
+            ) as client:
                 resp = await client.get(
                     "/internal/billing",
                     params={
@@ -246,9 +251,7 @@ class TestValidateClaimImpl:
             patient_resp = await api_client.get(
                 "/apis/default/api/patient", params={"pid": PATIENT_ID_COMPLETE}
             )
-            puuid = find_patient_uuid(
-                patient_resp.get("data", []), PATIENT_ID_COMPLETE
-            )
+            puuid = find_patient_uuid(patient_resp.get("data", []), PATIENT_ID_COMPLETE)
             ins_resp = await api_client.get(
                 f"/apis/default/api/patient/{puuid}/insurance"
             )

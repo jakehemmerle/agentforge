@@ -107,20 +107,14 @@ class OpenEMRClient:
 
         if resp.status_code != 200:
             body = resp.text
-            logger.error(
-                "OAuth2 token request failed (%s): %s", resp.status_code, body
-            )
-            raise OpenEMRAuthError(
-                f"Token request failed ({resp.status_code}): {body}"
-            )
+            logger.error("OAuth2 token request failed (%s): %s", resp.status_code, body)
+            raise OpenEMRAuthError(f"Token request failed ({resp.status_code}): {body}")
 
         payload = resp.json()
         self._access_token = payload["access_token"]
         expires_in = int(payload.get("expires_in", 3600))
         self._token_expiry = time.monotonic() + expires_in
-        logger.info(
-            "Authenticated with OpenEMR (token expires in %ds)", expires_in
-        )
+        logger.info("Authenticated with OpenEMR (token expires in %ds)", expires_in)
 
     def _token_is_valid(self) -> bool:
         return (
@@ -172,9 +166,7 @@ class OpenEMRClient:
         if resp.status_code == 401:
             logger.warning("Got 401, re-authenticating and retrying POST %s", path)
             await self.authenticate()
-            resp = await self._http.post(
-                path, json=json, headers=self._auth_headers()
-            )
+            resp = await self._http.post(path, json=json, headers=self._auth_headers())
 
         resp.raise_for_status()
         return resp.json()
@@ -209,9 +201,7 @@ class OpenEMRClient:
 
         if resp.status_code not in (200, 201):
             body = resp.text
-            logger.error(
-                "Client registration failed (%s): %s", resp.status_code, body
-            )
+            logger.error("Client registration failed (%s): %s", resp.status_code, body)
             raise OpenEMRAuthError(
                 f"Client registration failed ({resp.status_code}): {body}"
             )

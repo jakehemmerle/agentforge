@@ -37,7 +37,9 @@ _AI_AGENT_DIR = _EVALS_DIR.parent
 # ---------------------------------------------------------------------------
 
 
-def _load_cases(category: str | None = None, tags: list[str] | None = None) -> list[dict]:
+def _load_cases(
+    category: str | None = None, tags: list[str] | None = None
+) -> list[dict]:
     """Load eval cases from eval_cases.yaml with optional filters."""
     with open(_EVALS_DIR / "eval_cases.yaml") as f:
         data = yaml.safe_load(f)
@@ -156,25 +158,37 @@ async def run_evals(category: str | None = None, tags: list[str] | None = None) 
     passed = 0
     async for result in results:
         total += 1
-        example = result.get("example") if isinstance(result, dict) else getattr(result, "example", None)
+        example = (
+            result.get("example")
+            if isinstance(result, dict)
+            else getattr(result, "example", None)
+        )
         if example is not None:
             metadata = example.metadata if hasattr(example, "metadata") else {}
             name = (metadata or {}).get("name", f"case-{total}")
         else:
             name = f"case-{total}"
 
-        eval_results_obj = result.get("evaluation_results") if isinstance(result, dict) else getattr(result, "evaluation_results", None)
+        eval_results_obj = (
+            result.get("evaluation_results")
+            if isinstance(result, dict)
+            else getattr(result, "evaluation_results", None)
+        )
         if isinstance(eval_results_obj, dict):
             eval_list = eval_results_obj.get("results", [])
         elif isinstance(eval_results_obj, list):
             eval_list = eval_results_obj
         else:
-            eval_list = getattr(eval_results_obj, "results", []) if eval_results_obj else []
+            eval_list = (
+                getattr(eval_results_obj, "results", []) if eval_results_obj else []
+            )
 
         scores = {}
         for r in eval_list:
             key = r.get("key") if isinstance(r, dict) else getattr(r, "key", None)
-            score_val = r.get("score") if isinstance(r, dict) else getattr(r, "score", None)
+            score_val = (
+                r.get("score") if isinstance(r, dict) else getattr(r, "score", None)
+            )
             if key is not None and score_val is not None:
                 scores[key] = score_val
 

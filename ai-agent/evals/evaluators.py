@@ -60,6 +60,7 @@ def _get_expected_keywords(example: _HasOutputsAndMetadata) -> list[str]:
         return expected["keywords"]
     return example.outputs.get("expected_keywords", [])
 
+
 # Hallucination markers — specific details the model shouldn't fabricate.
 _HALLUCINATION_MARKERS: list[str] = [
     "09:00",

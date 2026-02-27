@@ -13,7 +13,9 @@ from pathlib import Path
 # Paths
 # ---------------------------------------------------------------------------
 
-COMPOSE_DIR = Path(__file__).resolve().parents[3] / "openemr" / "docker" / "development-easy"
+COMPOSE_DIR = (
+    Path(__file__).resolve().parents[3] / "openemr" / "docker" / "development-easy"
+)
 COMPOSE_TEST_FILE = COMPOSE_DIR / "docker-compose.test.yml"
 AI_AGENT_DIR = Path(__file__).resolve().parents[2]
 
@@ -64,6 +66,9 @@ PATIENT_ID_GARCIA = 90004
 PATIENT_ID_WILSON = 90005
 ENCOUNTER_COMPLETE = 900001
 ENCOUNTER_INCOMPLETE = 900002
+ENCOUNTER_JOHNSON = 900003
+ENCOUNTER_GARCIA = 900004
+ENCOUNTER_WILSON = 900005
 
 ALL_SEED_PIDS = [
     PATIENT_ID_COMPLETE,
@@ -72,7 +77,13 @@ ALL_SEED_PIDS = [
     PATIENT_ID_GARCIA,
     PATIENT_ID_WILSON,
 ]
-ALL_SEED_ENCOUNTER_IDS = [ENCOUNTER_COMPLETE, ENCOUNTER_INCOMPLETE]
+ALL_SEED_ENCOUNTER_IDS = [
+    ENCOUNTER_COMPLETE,
+    ENCOUNTER_INCOMPLETE,
+    ENCOUNTER_JOHNSON,
+    ENCOUNTER_GARCIA,
+    ENCOUNTER_WILSON,
+]
 
 # ---------------------------------------------------------------------------
 # Timeouts

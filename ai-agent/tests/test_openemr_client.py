@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 
-import httpx
 import pytest
 
 from ai_agent.openemr_client import (
@@ -189,9 +188,7 @@ async def test_post_sends_json(client: OpenEMRClient, httpx_mock):
         json={"id": 42},
     )
 
-    result = await client.post(
-        "/apis/default/api/appointment", json={"patient_id": 1}
-    )
+    result = await client.post("/apis/default/api/appointment", json={"patient_id": 1})
     assert result == {"id": 42}
 
     req = httpx_mock.get_request()

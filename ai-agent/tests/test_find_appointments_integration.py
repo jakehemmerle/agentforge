@@ -11,7 +11,6 @@ from datetime import date
 from unittest.mock import patch
 
 import pytest
-from langchain_core.tools import ToolException
 
 from ai_agent.config import get_settings
 from ai_agent.tools.find_appointments import (
@@ -120,9 +119,7 @@ class TestStatusFilter:
         """Filtering by status '@' (arrived) on today should return results."""
         today = date.today().isoformat()
         async with api_client:
-            result = await _find_appointments_impl(
-                api_client, date=today, status="@"
-            )
+            result = await _find_appointments_impl(api_client, date=today, status="@")
         assert result["total_count"] > 0
         statuses = {a["status"] for a in result["appointments"]}
         assert statuses == {"@"}

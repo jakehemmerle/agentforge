@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from typing import Any, Callable
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -59,7 +58,6 @@ if _INTEGRATION:
     from tests.integration.config import (
         ALL_SEED_ENCOUNTER_IDS,
         ALL_SEED_PIDS,
-        OPENEMR_BASE_URL,
     )
     from tests.integration.factories import insert_billing_row, insert_insurance
 

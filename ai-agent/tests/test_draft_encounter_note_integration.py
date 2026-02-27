@@ -45,12 +45,14 @@ def _mock_llm_soap() -> AsyncMock:
     """Return a mock LLM that produces a valid SOAP JSON response."""
     llm = AsyncMock()
     llm.ainvoke.return_value = AIMessage(
-        content=json.dumps({
-            "subjective": "Patient presents for annual checkup.",
-            "objective": "Vitals within normal limits.",
-            "assessment": "Routine wellness visit.",
-            "plan": "Continue current medications. Follow up in 1 year.",
-        })
+        content=json.dumps(
+            {
+                "subjective": "Patient presents for annual checkup.",
+                "objective": "Vitals within normal limits.",
+                "assessment": "Routine wellness visit.",
+                "plan": "Continue current medications. Follow up in 1 year.",
+            }
+        )
     )
     return llm
 
@@ -59,9 +61,9 @@ def _mock_llm_progress() -> AsyncMock:
     """Return a mock LLM that produces a valid progress note JSON response."""
     llm = AsyncMock()
     llm.ainvoke.return_value = AIMessage(
-        content=json.dumps({
-            "narrative": "Patient seen for follow-up. Stable condition."
-        })
+        content=json.dumps(
+            {"narrative": "Patient seen for follow-up. Stable condition."}
+        )
     )
     return llm
 
@@ -70,9 +72,7 @@ def _mock_llm_brief() -> AsyncMock:
     """Return a mock LLM that produces a valid brief note JSON response."""
     llm = AsyncMock()
     llm.ainvoke.return_value = AIMessage(
-        content=json.dumps({
-            "summary": "Routine annual visit. No acute concerns."
-        })
+        content=json.dumps({"summary": "Routine annual visit. No acute concerns."})
     )
     return llm
 
@@ -214,9 +214,14 @@ class TestOutputShape:
             result.keys()
         )
         note = result["draft_note"]
-        assert {"type", "content", "full_text", "encounter_id", "patient_name", "generated_at"} == set(
-            note.keys()
-        )
+        assert {
+            "type",
+            "content",
+            "full_text",
+            "encounter_id",
+            "patient_name",
+            "generated_at",
+        } == set(note.keys())
 
     async def test_data_warnings_on_malformed_llm_response(self, api_client):
         """Malformed LLM response should populate data_warnings with parse failure."""

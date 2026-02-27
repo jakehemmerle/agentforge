@@ -33,7 +33,12 @@ class AgentState(TypedDict):
 
 # -- tools ---------------------------------------------------------------------
 
-tools = [find_appointments, get_encounter_context, draft_encounter_note, validate_claim_ready_completeness]
+tools = [
+    find_appointments,
+    get_encounter_context,
+    draft_encounter_note,
+    validate_claim_ready_completeness,
+]
 
 # -- model ---------------------------------------------------------------------
 
@@ -41,7 +46,7 @@ _settings = get_settings()
 model = ChatAnthropic(
     model=_settings.model_name,
     temperature=0,
-    api_key=_settings.anthropic_api_key or None,
+    api_key=_settings.anthropic_api_key,
 )
 model_with_tools = model.bind_tools(tools)
 
@@ -50,7 +55,9 @@ model_with_tools = model.bind_tools(tools)
 
 async def call_llm(state: AgentState) -> dict[str, Any]:
     """Invoke the LLM with the system prompt and conversation history."""
-    system_msg = SystemMessage(content=SYSTEM_PROMPT.format(today=date.today().isoformat()))
+    system_msg = SystemMessage(
+        content=SYSTEM_PROMPT.format(today=date.today().isoformat())
+    )
     response = await model_with_tools.ainvoke([system_msg] + state["messages"])
     return {"messages": [response]}
 

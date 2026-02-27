@@ -69,9 +69,7 @@ def _make_fhir_medication(**overrides: Any) -> dict[str, Any]:
             },
             "dosageInstruction": [
                 {
-                    "doseAndRate": [
-                        {"doseQuantity": {"value": 500, "unit": "mg"}}
-                    ],
+                    "doseAndRate": [{"doseQuantity": {"value": 500, "unit": "mg"}}],
                     "timing": {"code": {"text": "twice daily"}},
                 }
             ],
@@ -91,9 +89,7 @@ def _make_fhir_allergy(**overrides: Any) -> dict[str, Any]:
             },
             "reaction": [
                 {
-                    "manifestation": [
-                        {"coding": [{"display": "Rash"}]}
-                    ],
+                    "manifestation": [{"coding": [{"display": "Rash"}]}],
                     "severity": "moderate",
                 }
             ],
@@ -201,9 +197,7 @@ async def test_get_encounter_by_id():
         allergies_bundle=allergies_bundle,
     )
 
-    result = await _get_encounter_context_impl(
-        client, patient_id=10, encounter_id=5
-    )
+    result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
 
     assert result["encounter"]["id"] == 5
     assert result["encounter"]["reason"] == "Annual checkup"
@@ -223,9 +217,7 @@ async def test_get_encounter_by_date():
     encounter = make_encounter(date="2026-03-01 09:00:00")
     client = mock_encounter_client(patients=[patient], encounters=[encounter])
 
-    result = await _get_encounter_context_impl(
-        client, patient_id=10, date="2026-03-01"
-    )
+    result = await _get_encounter_context_impl(client, patient_id=10, date="2026-03-01")
 
     assert result["encounter"]["id"] == 5
     assert result["data_warnings"] == []
@@ -236,18 +228,14 @@ async def test_encounter_not_found():
     client = mock_encounter_client(patients=[patient], encounters=[])
 
     with pytest.raises(ToolException, match="No encounter found with ID 999"):
-        await _get_encounter_context_impl(
-            client, patient_id=10, encounter_id=999
-        )
+        await _get_encounter_context_impl(client, patient_id=10, encounter_id=999)
 
 
 async def test_patient_not_found():
     client = mock_encounter_client(patients=[])
 
     with pytest.raises(ToolException, match="No patient found with ID 99"):
-        await _get_encounter_context_impl(
-            client, patient_id=99, encounter_id=1
-        )
+        await _get_encounter_context_impl(client, patient_id=99, encounter_id=1)
 
 
 async def test_multiple_encounters_on_date():
@@ -258,9 +246,7 @@ async def test_multiple_encounters_on_date():
     ]
     client = mock_encounter_client(patients=[patient], encounters=encounters)
 
-    result = await _get_encounter_context_impl(
-        client, patient_id=10, date="2026-03-01"
-    )
+    result = await _get_encounter_context_impl(client, patient_id=10, date="2026-03-01")
 
     assert "message" in result
     assert "Multiple encounters" in result["message"]
@@ -272,9 +258,7 @@ async def test_no_encounters_on_date():
     client = mock_encounter_client(patients=[patient], encounters=[])
 
     with pytest.raises(ToolException, match="No encounters found on 2026-04-01"):
-        await _get_encounter_context_impl(
-            client, patient_id=10, date="2026-04-01"
-        )
+        await _get_encounter_context_impl(client, patient_id=10, date="2026-04-01")
 
 
 async def test_partial_clinical_data():
@@ -283,9 +267,7 @@ async def test_partial_clinical_data():
     encounter = make_encounter()
     client = mock_encounter_client(patients=[patient], encounters=[encounter])
 
-    result = await _get_encounter_context_impl(
-        client, patient_id=10, encounter_id=5
-    )
+    result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
 
     assert result["clinical_context"]["vitals"] is None
     assert result["clinical_context"]["existing_notes"] == []
@@ -308,7 +290,9 @@ def test_input_schema_valid_with_date():
 
 
 def test_input_schema_requires_encounter_id_or_date():
-    with pytest.raises(ValueError, match="Either encounter_id or date must be provided"):
+    with pytest.raises(
+        ValueError, match="Either encounter_id or date must be provided"
+    ):
         GetEncounterContextInput(patient_id=10)
 
 
@@ -347,7 +331,13 @@ def test_format_soap_notes_empty():
 
 
 def test_format_soap_notes_all_sections_empty():
-    note = {"subjective": "", "objective": "", "assessment": "", "plan": "", "date": "2026-03-01"}
+    note = {
+        "subjective": "",
+        "objective": "",
+        "assessment": "",
+        "plan": "",
+        "date": "2026-03-01",
+    }
     result = _format_soap_notes([note])
     assert result[0]["summary"] == ""
 
@@ -416,7 +406,8 @@ async def test_fhir_conditions_error_returns_empty(mock_fhir_error_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_error_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/fhir/Condition"},
     )
 
@@ -430,7 +421,8 @@ async def test_fhir_medications_error_returns_empty(mock_fhir_error_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_error_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/fhir/MedicationRequest"},
     )
 
@@ -444,7 +436,8 @@ async def test_fhir_allergies_error_returns_empty(mock_fhir_error_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_error_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/fhir/AllergyIntolerance"},
     )
 
@@ -458,7 +451,8 @@ async def test_vitals_error_returns_none(mock_fhir_error_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_error_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/vital"},
     )
 
@@ -472,7 +466,8 @@ async def test_soap_notes_error_returns_empty(mock_fhir_error_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_error_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/soap_note"},
     )
 
@@ -486,8 +481,15 @@ async def test_all_fhir_errors_still_returns_encounter(mock_fhir_error_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_error_client(
-        patients=[patient], encounters=[encounter],
-        failing_paths={"/fhir/Condition", "/fhir/MedicationRequest", "/fhir/AllergyIntolerance", "/vital", "/soap_note"},
+        patients=[patient],
+        encounters=[encounter],
+        failing_paths={
+            "/fhir/Condition",
+            "/fhir/MedicationRequest",
+            "/fhir/AllergyIntolerance",
+            "/vital",
+            "/soap_note",
+        },
     )
 
     result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
@@ -509,13 +511,17 @@ async def test_fhir_conditions_timeout_returns_empty(mock_fhir_timeout_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_timeout_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/fhir/Condition"},
     )
 
     result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
     assert result["clinical_context"]["active_problems"] == []
-    assert any("conditions_fetch_failed" in w and "timed out" in w for w in result["data_warnings"])
+    assert any(
+        "conditions_fetch_failed" in w and "timed out" in w
+        for w in result["data_warnings"]
+    )
 
 
 async def test_fhir_conditions_request_error_returns_empty():
@@ -556,13 +562,17 @@ async def test_fhir_medications_timeout_returns_empty(mock_fhir_timeout_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_timeout_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/fhir/MedicationRequest"},
     )
 
     result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
     assert result["clinical_context"]["medications"] == []
-    assert any("medications_fetch_failed" in w and "timed out" in w for w in result["data_warnings"])
+    assert any(
+        "medications_fetch_failed" in w and "timed out" in w
+        for w in result["data_warnings"]
+    )
 
 
 async def test_vitals_timeout_returns_none(mock_fhir_timeout_client):
@@ -570,13 +580,16 @@ async def test_vitals_timeout_returns_none(mock_fhir_timeout_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_timeout_client(
-        patients=[patient], encounters=[encounter],
+        patients=[patient],
+        encounters=[encounter],
         failing_paths={"/vital"},
     )
 
     result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
     assert result["clinical_context"]["vitals"] is None
-    assert any("vitals_fetch_failed" in w and "timed out" in w for w in result["data_warnings"])
+    assert any(
+        "vitals_fetch_failed" in w and "timed out" in w for w in result["data_warnings"]
+    )
 
 
 async def test_all_fhir_timeouts_produce_5_warnings(mock_fhir_timeout_client):
@@ -584,8 +597,15 @@ async def test_all_fhir_timeouts_produce_5_warnings(mock_fhir_timeout_client):
     patient = make_patient()
     encounter = make_encounter()
     client = mock_fhir_timeout_client(
-        patients=[patient], encounters=[encounter],
-        failing_paths={"/fhir/Condition", "/fhir/MedicationRequest", "/fhir/AllergyIntolerance", "/vital", "/soap_note"},
+        patients=[patient],
+        encounters=[encounter],
+        failing_paths={
+            "/fhir/Condition",
+            "/fhir/MedicationRequest",
+            "/fhir/AllergyIntolerance",
+            "/vital",
+            "/soap_note",
+        },
     )
 
     result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
@@ -606,10 +626,14 @@ async def test_all_fhir_timeouts_produce_5_warnings(mock_fhir_timeout_client):
 
 
 def test_parse_conditions_multiple():
-    bundle = {"entry": [
-        _make_fhir_condition(),
-        _make_fhir_condition(code={"coding": [{"code": "I10", "display": "Hypertension"}]}),
-    ]}
+    bundle = {
+        "entry": [
+            _make_fhir_condition(),
+            _make_fhir_condition(
+                code={"coding": [{"code": "I10", "display": "Hypertension"}]}
+            ),
+        ]
+    }
     result = _parse_conditions(bundle)
     assert len(result) == 2
     assert result[1]["code"] == "I10"
@@ -626,7 +650,12 @@ def test_parse_conditions_empty_coding():
 
 def test_parse_conditions_text_fallback():
     """When coding[0] has no 'display', falls back to code.text."""
-    entry = {"resource": {"code": {"text": "Some condition", "coding": [{"code": "X99"}]}, "onsetDateTime": ""}}
+    entry = {
+        "resource": {
+            "code": {"text": "Some condition", "coding": [{"code": "X99"}]},
+            "onsetDateTime": "",
+        }
+    }
     result = _parse_conditions({"entry": [entry]})
     assert result[0]["code"] == "X99"
     assert result[0]["description"] == "Some condition"
@@ -638,10 +667,12 @@ def test_parse_medications_empty():
 
 
 def test_parse_medications_no_dosage():
-    entry = {"resource": {
-        "medicationCodeableConcept": {"coding": [{"display": "Aspirin"}]},
-        "dosageInstruction": [],
-    }}
+    entry = {
+        "resource": {
+            "medicationCodeableConcept": {"coding": [{"display": "Aspirin"}]},
+            "dosageInstruction": [],
+        }
+    }
     result = _parse_medications({"entry": [entry]})
     assert result[0]["drug_name"] == "Aspirin"
     assert result[0]["dose"] == ""
@@ -650,9 +681,11 @@ def test_parse_medications_no_dosage():
 
 def test_parse_medications_text_fallback():
     """When coding[0] has no 'display', falls back to medicationCodeableConcept.text."""
-    entry = {"resource": {
-        "medicationCodeableConcept": {"text": "Custom Drug", "coding": [{}]},
-    }}
+    entry = {
+        "resource": {
+            "medicationCodeableConcept": {"text": "Custom Drug", "coding": [{}]},
+        }
+    }
     result = _parse_medications({"entry": [entry]})
     assert result[0]["drug_name"] == "Custom Drug"
 
@@ -663,10 +696,12 @@ def test_parse_allergies_empty():
 
 
 def test_parse_allergies_no_reaction():
-    entry = {"resource": {
-        "code": {"coding": [{"display": "Latex"}]},
-        "reaction": [],
-    }}
+    entry = {
+        "resource": {
+            "code": {"coding": [{"display": "Latex"}]},
+            "reaction": [],
+        }
+    }
     result = _parse_allergies({"entry": [entry]})
     assert result[0]["substance"] == "Latex"
     assert result[0]["reaction"] == ""
@@ -674,13 +709,22 @@ def test_parse_allergies_no_reaction():
 
 
 def test_parse_allergies_multiple():
-    bundle = {"entry": [
-        _make_fhir_allergy(),
-        {"resource": {
-            "code": {"coding": [{"display": "Sulfa"}]},
-            "reaction": [{"manifestation": [{"coding": [{"display": "Hives"}]}], "severity": "severe"}],
-        }},
-    ]}
+    bundle = {
+        "entry": [
+            _make_fhir_allergy(),
+            {
+                "resource": {
+                    "code": {"coding": [{"display": "Sulfa"}]},
+                    "reaction": [
+                        {
+                            "manifestation": [{"coding": [{"display": "Hives"}]}],
+                            "severity": "severe",
+                        }
+                    ],
+                }
+            },
+        ]
+    }
     result = _parse_allergies(bundle)
     assert len(result) == 2
     assert result[1]["substance"] == "Sulfa"
@@ -721,9 +765,7 @@ async def test_get_encounter_by_id_with_string_ids():
     encounter = make_encounter(id="5")  # string, not int
     client = mock_encounter_client(patients=[patient], encounters=[encounter])
 
-    result = await _get_encounter_context_impl(
-        client, patient_id=10, encounter_id=5
-    )
+    result = await _get_encounter_context_impl(client, patient_id=10, encounter_id=5)
 
     assert result["encounter"]["id"] == "5"
     assert result["patient"]["name"] == "John Doe"

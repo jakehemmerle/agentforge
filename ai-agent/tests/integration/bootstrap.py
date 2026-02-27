@@ -69,9 +69,7 @@ def check_port_conflicts() -> None:
     conflicts: list[str] = []
     for port, label in _REQUIRED_PORTS.items():
         if _is_port_in_use(port):
-            conflicts.append(
-                f"  - Port {port} ({label}) is already in use."
-            )
+            conflicts.append(f"  - Port {port} ({label}) is already in use.")
     if conflicts:
         raise RuntimeError(
             "Port conflict detected — cannot start integration test services:\n"
@@ -121,9 +119,12 @@ def start_services() -> None:
 
     compose_base_file = COMPOSE_TEST_FILE.parent / "docker-compose.yml"
     compose_cmd = [
-        "docker", "compose",
-        "-f", str(compose_base_file),
-        "-f", str(COMPOSE_TEST_FILE),
+        "docker",
+        "compose",
+        "-f",
+        str(compose_base_file),
+        "-f",
+        str(COMPOSE_TEST_FILE),
     ]
 
     print("Tearing down any previous test containers...")
@@ -157,9 +158,7 @@ def wait_for_health(timeout: int = HEALTH_TIMEOUT) -> None:
     Checks every 3 seconds. Raises :class:`RuntimeError` if *timeout*
     seconds elapse without a healthy response.
     """
-    print(
-        f"Waiting for OpenEMR at {OPENEMR_BASE_URL} (timeout {timeout}s)..."
-    )
+    print(f"Waiting for OpenEMR at {OPENEMR_BASE_URL} (timeout {timeout}s)...")
     deadline = time.monotonic() + timeout
     last_error = ""
     while time.monotonic() < deadline:
@@ -181,8 +180,7 @@ def wait_for_health(timeout: int = HEALTH_TIMEOUT) -> None:
             last_error = type(exc).__name__
         time.sleep(3)
     raise RuntimeError(
-        f"OpenEMR failed to become healthy within {timeout}s. "
-        f"Last error: {last_error}"
+        f"OpenEMR failed to become healthy within {timeout}s. Last error: {last_error}"
     )
 
 
@@ -234,8 +232,7 @@ def register_oauth_client(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE oauth_clients SET is_enabled=1 "
-                "WHERE client_name=%s",
+                "UPDATE oauth_clients SET is_enabled=1 WHERE client_name=%s",
                 (client_name,),
             )
         conn.commit()

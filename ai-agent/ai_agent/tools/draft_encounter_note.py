@@ -119,8 +119,7 @@ def _build_encounter_summary(context: dict[str, Any]) -> str:
     notes = clinical.get("existing_notes", [])
     if notes:
         note_lines = [
-            f"  - [{n.get('date', '')}] {n.get('summary', '')}"
-            for n in notes
+            f"  - [{n.get('date', '')}] {n.get('summary', '')}" for n in notes
         ]
         parts.append("EXISTING NOTES:\n" + "\n".join(note_lines))
 
@@ -213,7 +212,9 @@ async def _draft_encounter_note_impl(
 
     prompt_parts = [f"ENCOUNTER CONTEXT:\n{encounter_summary}"]
     if additional_context:
-        prompt_parts.append(f"ADDITIONAL CONTEXT FROM CONVERSATION:\n{additional_context}")
+        prompt_parts.append(
+            f"ADDITIONAL CONTEXT FROM CONVERSATION:\n{additional_context}"
+        )
     prompt_parts.append(template)
 
     user_prompt = "\n\n".join(prompt_parts)
@@ -316,9 +317,7 @@ async def draft_encounter_note(
                 additional_context=additional_context,
             )
     except httpx.TimeoutException as exc:
-        raise ToolException(
-            f"OpenEMR API timed out: {exc}. Please try again."
-        ) from exc
+        raise ToolException(f"OpenEMR API timed out: {exc}. Please try again.") from exc
     except httpx.RequestError as exc:
         raise ToolException(
             f"OpenEMR API network error: {exc}. Please check connectivity and try again."

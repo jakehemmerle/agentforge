@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from langchain_core.messages import AIMessage
@@ -46,10 +46,18 @@ def _make_encounter_context(**overrides: Any) -> dict[str, Any]:
         },
         "clinical_context": {
             "active_problems": [
-                {"code": "E11.9", "description": "Type 2 diabetes", "onset_date": "2020-06-15"},
+                {
+                    "code": "E11.9",
+                    "description": "Type 2 diabetes",
+                    "onset_date": "2020-06-15",
+                },
             ],
             "medications": [
-                {"drug_name": "Metformin", "dose": "500 mg", "frequency": "twice daily"},
+                {
+                    "drug_name": "Metformin",
+                    "dose": "500 mg",
+                    "frequency": "twice daily",
+                },
             ],
             "allergies": [
                 {"substance": "Penicillin", "reaction": "Rash", "severity": "moderate"},
@@ -88,9 +96,7 @@ def _make_encounter_context(**overrides: Any) -> dict[str, Any]:
 def _mock_llm(response_json: dict[str, Any]) -> AsyncMock:
     """Build a mock ChatAnthropic that returns the given JSON as content."""
     llm = AsyncMock()
-    llm.ainvoke = AsyncMock(
-        return_value=AIMessage(content=json.dumps(response_json))
-    )
+    llm.ainvoke = AsyncMock(return_value=AIMessage(content=json.dumps(response_json)))
     return llm
 
 
@@ -164,7 +170,12 @@ def test_parse_llm_response_invalid_json_brief():
 
 
 def test_format_full_text_soap():
-    content = {"subjective": "CC here", "objective": "Vitals normal", "assessment": "Stable", "plan": "Follow up"}
+    content = {
+        "subjective": "CC here",
+        "objective": "Vitals normal",
+        "assessment": "Stable",
+        "plan": "Follow up",
+    }
     text = _format_full_text(content, "SOAP")
     assert "S: CC here" in text
     assert "O: Vitals normal" in text
@@ -191,19 +202,61 @@ async def test_draft_soap_note():
     """Full flow: fetch context, call LLM, return structured draft."""
     patient = make_patient()
     encounter = make_encounter()
-    vitals = [{"temperature": "98.6", "bps": "120", "bpd": "80", "pulse": "72",
-               "respiration": "16", "oxygen_saturation": "98", "weight": "180", "height": "70"}]
+    vitals = [
+        {
+            "temperature": "98.6",
+            "bps": "120",
+            "bpd": "80",
+            "pulse": "72",
+            "respiration": "16",
+            "oxygen_saturation": "98",
+            "weight": "180",
+            "height": "70",
+        }
+    ]
     conditions_bundle = {
-        "entry": [{"resource": {"code": {"coding": [{"code": "E11.9", "display": "Type 2 diabetes"}]}, "onsetDateTime": "2020-06-15"}}]
+        "entry": [
+            {
+                "resource": {
+                    "code": {
+                        "coding": [{"code": "E11.9", "display": "Type 2 diabetes"}]
+                    },
+                    "onsetDateTime": "2020-06-15",
+                }
+            }
+        ]
     }
     medications_bundle = {
-        "entry": [{"resource": {"medicationCodeableConcept": {"coding": [{"display": "Metformin"}]},
-                   "dosageInstruction": [{"doseAndRate": [{"doseQuantity": {"value": 500, "unit": "mg"}}],
-                                          "timing": {"code": {"text": "twice daily"}}}]}}]
+        "entry": [
+            {
+                "resource": {
+                    "medicationCodeableConcept": {"coding": [{"display": "Metformin"}]},
+                    "dosageInstruction": [
+                        {
+                            "doseAndRate": [
+                                {"doseQuantity": {"value": 500, "unit": "mg"}}
+                            ],
+                            "timing": {"code": {"text": "twice daily"}},
+                        }
+                    ],
+                }
+            }
+        ]
     }
     allergies_bundle = {
-        "entry": [{"resource": {"code": {"coding": [{"display": "Penicillin"}]},
-                   "reaction": [{"manifestation": [{"coding": [{"display": "Rash"}]}], "severity": "moderate"}]}}]
+        "entry": [
+            {
+                "resource": {
+                    "code": {"coding": [{"display": "Penicillin"}]},
+                    "reaction": [
+                        {
+                            "manifestation": [{"coding": [{"display": "Rash"}]}],
+                            "severity": "moderate",
+                        }
+                    ],
+                }
+            }
+        ]
     }
 
     client = mock_encounter_client(
@@ -233,7 +286,10 @@ async def test_draft_soap_note():
     assert result["draft_note"]["content"]["subjective"] == llm_response["subjective"]
     assert "S: " in result["draft_note"]["full_text"]
     assert "generated_at" in result["draft_note"]
-    assert result["disclaimer"] == "This is an AI-generated draft. Review and edit before saving."
+    assert (
+        result["disclaimer"]
+        == "This is an AI-generated draft. Review and edit before saving."
+    )
     assert result["warnings"] == []
     assert result["data_warnings"] == []
 
@@ -258,8 +314,13 @@ async def test_draft_progress_note():
     )
 
     assert result["draft_note"]["type"] == "progress"
-    assert result["draft_note"]["content"]["narrative"] == "Patient seen for annual checkup. Stable."
-    assert result["draft_note"]["full_text"] == "Patient seen for annual checkup. Stable."
+    assert (
+        result["draft_note"]["content"]["narrative"]
+        == "Patient seen for annual checkup. Stable."
+    )
+    assert (
+        result["draft_note"]["full_text"] == "Patient seen for annual checkup. Stable."
+    )
 
 
 async def test_draft_brief_note():
@@ -275,7 +336,10 @@ async def test_draft_brief_note():
     )
 
     assert result["draft_note"]["type"] == "brief"
-    assert result["draft_note"]["full_text"] == "Annual checkup, stable diabetes, continue meds."
+    assert (
+        result["draft_note"]["full_text"]
+        == "Annual checkup, stable diabetes, continue meds."
+    )
 
 
 async def test_invalid_note_type_defaults_to_soap():
@@ -300,9 +364,7 @@ async def test_missing_encounter_raises():
     llm = _mock_llm({})
 
     with pytest.raises(ToolException, match="No encounter found with ID 999"):
-        await _draft_encounter_note_impl(
-            client, llm, encounter_id=999, patient_id=10
-        )
+        await _draft_encounter_note_impl(client, llm, encounter_id=999, patient_id=10)
 
 
 async def test_missing_patient_raises():
@@ -310,9 +372,7 @@ async def test_missing_patient_raises():
     llm = _mock_llm({})
 
     with pytest.raises(ToolException, match="No patient found with ID 99"):
-        await _draft_encounter_note_impl(
-            client, llm, encounter_id=5, patient_id=99
-        )
+        await _draft_encounter_note_impl(client, llm, encounter_id=5, patient_id=99)
 
 
 async def test_warnings_for_missing_clinical_data():
@@ -343,8 +403,11 @@ async def test_additional_context_included_in_prompt():
     llm = _mock_llm(llm_response)
 
     await _draft_encounter_note_impl(
-        client, llm, encounter_id=5, patient_id=10,
-        additional_context="Patient mentioned knee pain during conversation."
+        client,
+        llm,
+        encounter_id=5,
+        patient_id=10,
+        additional_context="Patient mentioned knee pain during conversation.",
     )
 
     call_messages = llm.ainvoke.call_args[0][0]
@@ -391,7 +454,9 @@ async def test_disambiguation_raises_tool_exception():
     patient = make_patient()
     # Two encounters on the same date — triggers disambiguation in get_encounter_context
     enc1 = make_encounter(id=5, date="2026-03-01 09:00:00", reason="Morning visit")
-    enc2 = make_encounter(id=6, date="2026-03-01 14:00:00", reason="Afternoon follow-up")
+    enc2 = make_encounter(
+        id=6, date="2026-03-01 14:00:00", reason="Afternoon follow-up"
+    )
     client = mock_encounter_client(patients=[patient], encounters=[enc1, enc2])
     llm = _mock_llm({})
 
@@ -411,9 +476,7 @@ async def test_disambiguation_raises_tool_exception():
         return_value=disambiguation,
     ):
         with pytest.raises(ToolException, match="Multiple encounters"):
-            await _draft_encounter_note_impl(
-                client, llm, encounter_id=5, patient_id=10
-            )
+            await _draft_encounter_note_impl(client, llm, encounter_id=5, patient_id=10)
 
 
 async def test_llm_invocation_error_propagates():
@@ -426,9 +489,7 @@ async def test_llm_invocation_error_propagates():
     llm.ainvoke = AsyncMock(side_effect=RuntimeError("LLM service unavailable"))
 
     with pytest.raises(RuntimeError, match="LLM service unavailable"):
-        await _draft_encounter_note_impl(
-            client, llm, encounter_id=5, patient_id=10
-        )
+        await _draft_encounter_note_impl(client, llm, encounter_id=5, patient_id=10)
 
 
 async def test_llm_non_string_content():
@@ -464,7 +525,10 @@ async def test_no_additional_context_omitted_from_prompt():
     llm = _mock_llm(llm_response)
 
     await _draft_encounter_note_impl(
-        client, llm, encounter_id=5, patient_id=10,
+        client,
+        llm,
+        encounter_id=5,
+        patient_id=10,
         additional_context=None,
     )
 
@@ -481,9 +545,7 @@ async def test_system_prompt_contains_safety_instructions():
     llm_response = {"subjective": "S", "objective": "O", "assessment": "A", "plan": "P"}
     llm = _mock_llm(llm_response)
 
-    await _draft_encounter_note_impl(
-        client, llm, encounter_id=5, patient_id=10
-    )
+    await _draft_encounter_note_impl(client, llm, encounter_id=5, patient_id=10)
 
     call_messages = llm.ainvoke.call_args[0][0]
     system_msg = call_messages[0].content
@@ -594,7 +656,11 @@ async def test_data_warnings_propagated_from_upstream():
         clinical_context={
             "active_problems": [],
             "medications": [
-                {"drug_name": "Metformin", "dose": "500 mg", "frequency": "twice daily"},
+                {
+                    "drug_name": "Metformin",
+                    "dose": "500 mg",
+                    "frequency": "twice daily",
+                },
             ],
             "allergies": [],
             "vitals": None,
@@ -628,9 +694,7 @@ async def test_data_warnings_llm_parse_failure():
     context = _make_encounter_context(data_warnings=[])
 
     llm = AsyncMock()
-    llm.ainvoke = AsyncMock(
-        return_value=AIMessage(content="this is not json at all")
-    )
+    llm.ainvoke = AsyncMock(return_value=AIMessage(content="this is not json at all"))
 
     with patch(
         "ai_agent.tools.draft_encounter_note._get_encounter_context_impl",
@@ -656,8 +720,12 @@ async def test_fetch_failed_vs_genuinely_absent_vitals():
     context_absent = _make_encounter_context(
         data_warnings=[],
         clinical_context={
-            "active_problems": [{"code": "E11.9", "description": "Diabetes", "onset_date": "2020-01-01"}],
-            "medications": [{"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}],
+            "active_problems": [
+                {"code": "E11.9", "description": "Diabetes", "onset_date": "2020-01-01"}
+            ],
+            "medications": [
+                {"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}
+            ],
             "allergies": [],
             "vitals": None,
             "existing_notes": [],
@@ -678,8 +746,12 @@ async def test_fetch_failed_vs_genuinely_absent_vitals():
     context_failed = _make_encounter_context(
         data_warnings=["vitals_fetch_failed: request timed out"],
         clinical_context={
-            "active_problems": [{"code": "E11.9", "description": "Diabetes", "onset_date": "2020-01-01"}],
-            "medications": [{"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}],
+            "active_problems": [
+                {"code": "E11.9", "description": "Diabetes", "onset_date": "2020-01-01"}
+            ],
+            "medications": [
+                {"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}
+            ],
             "allergies": [],
             "vitals": None,
             "existing_notes": [],
@@ -698,7 +770,9 @@ async def test_fetch_failed_vs_genuinely_absent_vitals():
 
     # Genuinely absent: "No vitals recorded"
     assert any("No vitals recorded" in w for w in result_absent["warnings"])
-    assert not any("fetch" in w.lower() for w in result_absent["warnings"] if "vitals" in w.lower())
+    assert not any(
+        "fetch" in w.lower() for w in result_absent["warnings"] if "vitals" in w.lower()
+    )
 
     # Fetch failed: "fetch from EHR failed"
     assert any("fetch from EHR failed" in w for w in result_failed["warnings"])
@@ -716,9 +790,19 @@ async def test_fetch_failed_vs_genuinely_absent_problems():
         data_warnings=[],
         clinical_context={
             "active_problems": [],
-            "medications": [{"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}],
+            "medications": [
+                {"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}
+            ],
             "allergies": [],
-            "vitals": {"temp": "98.6", "bp": "120/80", "hr": "72", "rr": "16", "spo2": "98", "weight": "180", "height": "70"},
+            "vitals": {
+                "temp": "98.6",
+                "bp": "120/80",
+                "hr": "72",
+                "rr": "16",
+                "spo2": "98",
+                "weight": "180",
+                "height": "70",
+            },
             "existing_notes": [],
         },
     )
@@ -738,9 +822,19 @@ async def test_fetch_failed_vs_genuinely_absent_problems():
         data_warnings=["conditions_fetch_failed: HTTP 500"],
         clinical_context={
             "active_problems": [],
-            "medications": [{"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}],
+            "medications": [
+                {"drug_name": "Metformin", "dose": "500 mg", "frequency": "BID"}
+            ],
             "allergies": [],
-            "vitals": {"temp": "98.6", "bp": "120/80", "hr": "72", "rr": "16", "spo2": "98", "weight": "180", "height": "70"},
+            "vitals": {
+                "temp": "98.6",
+                "bp": "120/80",
+                "hr": "72",
+                "rr": "16",
+                "spo2": "98",
+                "weight": "180",
+                "height": "70",
+            },
             "existing_notes": [],
         },
     )
@@ -759,4 +853,7 @@ async def test_fetch_failed_vs_genuinely_absent_problems():
     assert any("No active problems documented" in w for w in result_absent["warnings"])
 
     # Fetch failed: "Active problems unavailable" with "fetch from EHR failed"
-    assert any("Active problems unavailable" in w and "fetch from EHR failed" in w for w in result_failed["warnings"])
+    assert any(
+        "Active problems unavailable" in w and "fetch from EHR failed" in w
+        for w in result_failed["warnings"]
+    )

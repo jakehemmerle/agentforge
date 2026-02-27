@@ -225,7 +225,9 @@ def test_check_billing_facility_present():
 
 
 def test_check_billing_facility_fallback_to_facility():
-    enc = make_encounter(billing_facility=3, billing_facility_name="", facility="Fallback Clinic")
+    enc = make_encounter(
+        billing_facility=3, billing_facility_name="", facility="Fallback Clinic"
+    )
     errors, name = _check_billing_facility(enc)
     assert errors == []
     assert name == "Fallback Clinic"
@@ -267,7 +269,9 @@ def test_check_demographics_missing_fields():
 
 def test_check_demographics_missing_all():
     patient = {
-        "pid": 10, "uuid": "patient-uuid-1234", "pubpid": "MRN001",
+        "pid": 10,
+        "uuid": "patient-uuid-1234",
+        "pubpid": "MRN001",
     }
     errors = _check_demographics(patient)
     assert len(errors) == 1
@@ -374,8 +378,11 @@ async def test_validate_missing_dx_codes(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
 
     assert result["ready"] is False
@@ -392,8 +399,11 @@ async def test_validate_missing_cpt_codes(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
 
     assert result["ready"] is False
@@ -410,8 +420,11 @@ async def test_validate_missing_provider(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
 
     assert result["ready"] is False
@@ -429,8 +442,11 @@ async def test_validate_missing_billing_facility(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
 
     assert result["ready"] is False
@@ -448,14 +464,19 @@ async def test_validate_incomplete_demographics(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
 
     assert result["ready"] is False
     checks = [e["check"] for e in result["errors"]]
     assert "patient_demographics" in checks
-    demo_error = next(e for e in result["errors"] if e["check"] == "patient_demographics")
+    demo_error = next(
+        e for e in result["errors"] if e["check"] == "patient_demographics"
+    )
     assert "street address" in demo_error["message"]
     assert "zip code" in demo_error["message"]
 
@@ -469,8 +490,11 @@ async def test_validate_no_insurance_is_warning(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=[],
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=[],
     )
 
     assert result["ready"] is True
@@ -488,8 +512,11 @@ async def test_validate_zero_fee_is_warning(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
 
     assert result["ready"] is True
@@ -506,8 +533,11 @@ async def test_validate_no_billing_data(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=[], insurance_list=[_make_insurance()],
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=[],
+        insurance_list=[_make_insurance()],
     )
 
     assert result["ready"] is False
@@ -527,8 +557,11 @@ async def test_validate_all_failures(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=[], insurance_list=[],
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=[],
+        insurance_list=[],
     )
 
     assert result["ready"] is False
@@ -551,8 +584,11 @@ async def test_patient_not_found(mock_claim_client):
 
     with pytest.raises(ToolException, match="No patient found with ID 99"):
         await _validate_claim_impl(
-            client, patient_id=99, encounter_id=1,
-            billing_rows=[], insurance_list=[],
+            client,
+            patient_id=99,
+            encounter_id=1,
+            billing_rows=[],
+            insurance_list=[],
         )
 
 
@@ -562,8 +598,11 @@ async def test_patient_no_uuid(mock_claim_client):
 
     with pytest.raises(ToolException, match="Patient 10 has no UUID"):
         await _validate_claim_impl(
-            client, patient_id=10, encounter_id=5,
-            billing_rows=[], insurance_list=[],
+            client,
+            patient_id=10,
+            encounter_id=5,
+            billing_rows=[],
+            insurance_list=[],
         )
 
 
@@ -573,8 +612,11 @@ async def test_encounter_not_found(mock_claim_client):
 
     with pytest.raises(ToolException, match="No encounter found with ID 999"):
         await _validate_claim_impl(
-            client, patient_id=10, encounter_id=999,
-            billing_rows=[], insurance_list=[],
+            client,
+            patient_id=10,
+            encounter_id=999,
+            billing_rows=[],
+            insurance_list=[],
         )
 
 
@@ -588,8 +630,11 @@ async def test_encounter_string_id_match(mock_claim_client):
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
 
     assert result["encounter_id"] == 5
@@ -623,8 +668,22 @@ async def test_wrapper_fetches_billing_via_http_and_delegates(mock_claim_client)
     from unittest.mock import patch, AsyncMock as AM
 
     billing_rows = [
-        {"code_type": "ICD10", "code": "J06.9", "code_text": "URI", "fee": 0, "modifier": "", "units": 1},
-        {"code_type": "CPT4", "code": "99213", "code_text": "Office visit", "fee": 75.0, "modifier": "", "units": 1},
+        {
+            "code_type": "ICD10",
+            "code": "J06.9",
+            "code_text": "URI",
+            "fee": 0,
+            "modifier": "",
+            "units": 1,
+        },
+        {
+            "code_type": "CPT4",
+            "code": "99213",
+            "code_text": "Office visit",
+            "fee": 75.0,
+            "modifier": "",
+            "units": 1,
+        },
     ]
 
     mock_settings = AM()
@@ -662,7 +721,10 @@ async def test_wrapper_fetches_billing_via_http_and_delegates(mock_claim_client)
     mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
     with (
-        patch("ai_agent.tools.validate_claim_completeness.httpx.AsyncClient", return_value=mock_http_client),
+        patch(
+            "ai_agent.tools.validate_claim_completeness.httpx.AsyncClient",
+            return_value=mock_http_client,
+        ),
         patch("ai_agent.tools.validate_claim_completeness.OpenEMRClient") as MockClient,
         patch("ai_agent.config.get_settings", return_value=mock_settings),
     ):
@@ -701,16 +763,23 @@ async def test_wrapper_graceful_on_billing_http_error():
     client_mock.__aexit__ = AsyncMock(return_value=False)
 
     # Mock httpx.AsyncClient to raise HTTPStatusError for billing endpoint
-    billing_response = httpx.Response(502, request=httpx.Request("GET", "http://localhost:8350/internal/billing"))
+    billing_response = httpx.Response(
+        502, request=httpx.Request("GET", "http://localhost:8350/internal/billing")
+    )
     mock_http_client = AsyncMock()
     mock_http_client.get = AsyncMock(
-        side_effect=httpx.HTTPStatusError("Bad Gateway", request=billing_response.request, response=billing_response)
+        side_effect=httpx.HTTPStatusError(
+            "Bad Gateway", request=billing_response.request, response=billing_response
+        )
     )
     mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
     mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
     with (
-        patch("ai_agent.tools.validate_claim_completeness.httpx.AsyncClient", return_value=mock_http_client),
+        patch(
+            "ai_agent.tools.validate_claim_completeness.httpx.AsyncClient",
+            return_value=mock_http_client,
+        ),
         patch("ai_agent.tools.validate_claim_completeness.OpenEMRClient") as MockClient,
         patch("ai_agent.config.get_settings", return_value=mock_settings),
     ):
@@ -731,8 +800,22 @@ async def test_wrapper_graceful_on_insurance_timeout():
     from unittest.mock import patch, AsyncMock as AM
 
     billing_rows = [
-        {"code_type": "ICD10", "code": "J06.9", "code_text": "URI", "fee": 0, "modifier": "", "units": 1},
-        {"code_type": "CPT4", "code": "99213", "code_text": "Office visit", "fee": 75.0, "modifier": "", "units": 1},
+        {
+            "code_type": "ICD10",
+            "code": "J06.9",
+            "code_text": "URI",
+            "fee": 0,
+            "modifier": "",
+            "units": 1,
+        },
+        {
+            "code_type": "CPT4",
+            "code": "99213",
+            "code_text": "Office visit",
+            "fee": 75.0,
+            "modifier": "",
+            "units": 1,
+        },
     ]
 
     mock_settings = AM()
@@ -768,7 +851,10 @@ async def test_wrapper_graceful_on_insurance_timeout():
     mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
     with (
-        patch("ai_agent.tools.validate_claim_completeness.httpx.AsyncClient", return_value=mock_http_client),
+        patch(
+            "ai_agent.tools.validate_claim_completeness.httpx.AsyncClient",
+            return_value=mock_http_client,
+        ),
         patch("ai_agent.tools.validate_claim_completeness.OpenEMRClient") as MockClient,
         patch("ai_agent.config.get_settings", return_value=mock_settings),
     ):
@@ -789,8 +875,22 @@ async def test_wrapper_graceful_on_insurance_request_error():
     from unittest.mock import patch, AsyncMock as AM
 
     billing_rows = [
-        {"code_type": "ICD10", "code": "J06.9", "code_text": "URI", "fee": 0, "modifier": "", "units": 1},
-        {"code_type": "CPT4", "code": "99213", "code_text": "Office visit", "fee": 75.0, "modifier": "", "units": 1},
+        {
+            "code_type": "ICD10",
+            "code": "J06.9",
+            "code_text": "URI",
+            "fee": 0,
+            "modifier": "",
+            "units": 1,
+        },
+        {
+            "code_type": "CPT4",
+            "code": "99213",
+            "code_text": "Office visit",
+            "fee": 75.0,
+            "modifier": "",
+            "units": 1,
+        },
     ]
 
     mock_settings = AM()
@@ -829,7 +929,10 @@ async def test_wrapper_graceful_on_insurance_request_error():
     mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
     with (
-        patch("ai_agent.tools.validate_claim_completeness.httpx.AsyncClient", return_value=mock_http_client),
+        patch(
+            "ai_agent.tools.validate_claim_completeness.httpx.AsyncClient",
+            return_value=mock_http_client,
+        ),
         patch("ai_agent.tools.validate_claim_completeness.OpenEMRClient") as MockClient,
         patch("ai_agent.config.get_settings", return_value=mock_settings),
     ):

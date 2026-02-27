@@ -81,13 +81,13 @@ def _format_appointment(appt: dict[str, Any]) -> dict[str, Any]:
 def _matches_provider(appt: dict[str, Any], provider_name: str) -> bool:
     """Case-insensitive check if provider name appears in the appointment."""
     needle = provider_name.lower()
-    haystack = f"{appt.get('pce_aid_fname', '')} {appt.get('pce_aid_lname', '')}".lower()
+    haystack = (
+        f"{appt.get('pce_aid_fname', '')} {appt.get('pce_aid_lname', '')}".lower()
+    )
     return needle in haystack
 
 
-async def _search_patients(
-    client: OpenEMRClient, name: str
-) -> list[dict[str, Any]]:
+async def _search_patients(client: OpenEMRClient, name: str) -> list[dict[str, Any]]:
     """Search patients by name. Splits into first/last when possible."""
     parts = name.strip().split()
 
@@ -183,9 +183,7 @@ async def _find_appointments_impl(
     raw_appointments: list[dict[str, Any]] = []
     if resolved_pids:
         for pid in resolved_pids:
-            raw_appointments.extend(
-                await _fetch_appointments_for_patient(client, pid)
-            )
+            raw_appointments.extend(await _fetch_appointments_for_patient(client, pid))
     else:
         raw_appointments = await _fetch_all_appointments(client)
 
@@ -249,9 +247,7 @@ async def find_appointments(
                 patient_id=patient_id,
             )
     except httpx.TimeoutException as exc:
-        raise ToolException(
-            f"OpenEMR API timed out: {exc}. Please try again."
-        ) from exc
+        raise ToolException(f"OpenEMR API timed out: {exc}. Please try again.") from exc
     except httpx.RequestError as exc:
         raise ToolException(
             f"OpenEMR API network error: {exc}. Please check connectivity and try again."

@@ -12,11 +12,17 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from ai_agent.tools.find_appointments import _find_appointments_impl, _format_appointment
-from ai_agent.tools.get_encounter_context import _get_encounter_context_impl
 from ai_agent.tools.draft_encounter_note import _draft_encounter_note_impl
+from ai_agent.tools.find_appointments import _find_appointments_impl
+from ai_agent.tools.get_encounter_context import _get_encounter_context_impl
 from ai_agent.tools.validate_claim_completeness import _validate_claim_impl
-from tests.helpers import make_encounter, make_patient, mock_encounter_client, mock_appointment_client, mock_claim_client
+from tests.helpers import (
+    make_encounter,
+    make_patient,
+    mock_appointment_client,
+    mock_claim_client,
+    mock_encounter_client,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -179,26 +185,69 @@ async def test_get_encounter_context_output_schema():
     """get_encounter_context output has correct top-level and nested keys."""
     patient = make_patient()
     encounter = make_encounter()
-    vitals = [{
-        "temperature": "98.6", "bps": "120", "bpd": "80", "pulse": "72",
-        "respiration": "16", "oxygen_saturation": "98", "weight": "180", "height": "70",
-    }]
+    vitals = [
+        {
+            "temperature": "98.6",
+            "bps": "120",
+            "bpd": "80",
+            "pulse": "72",
+            "respiration": "16",
+            "oxygen_saturation": "98",
+            "weight": "180",
+            "height": "70",
+        }
+    ]
     conditions_bundle = {
-        "entry": [{"resource": {"code": {"coding": [{"code": "E11.9", "display": "Type 2 diabetes"}]}, "onsetDateTime": "2020-06-15"}}]
+        "entry": [
+            {
+                "resource": {
+                    "code": {
+                        "coding": [{"code": "E11.9", "display": "Type 2 diabetes"}]
+                    },
+                    "onsetDateTime": "2020-06-15",
+                }
+            }
+        ]
     }
     medications_bundle = {
-        "entry": [{"resource": {"medicationCodeableConcept": {"coding": [{"display": "Metformin"}]},
-                   "dosageInstruction": [{"doseAndRate": [{"doseQuantity": {"value": 500, "unit": "mg"}}],
-                                          "timing": {"code": {"text": "twice daily"}}}]}}]
+        "entry": [
+            {
+                "resource": {
+                    "medicationCodeableConcept": {"coding": [{"display": "Metformin"}]},
+                    "dosageInstruction": [
+                        {
+                            "doseAndRate": [
+                                {"doseQuantity": {"value": 500, "unit": "mg"}}
+                            ],
+                            "timing": {"code": {"text": "twice daily"}},
+                        }
+                    ],
+                }
+            }
+        ]
     }
     allergies_bundle = {
-        "entry": [{"resource": {"code": {"coding": [{"display": "Penicillin"}]},
-                   "reaction": [{"manifestation": [{"coding": [{"display": "Rash"}]}], "severity": "moderate"}]}}]
+        "entry": [
+            {
+                "resource": {
+                    "code": {"coding": [{"display": "Penicillin"}]},
+                    "reaction": [
+                        {
+                            "manifestation": [{"coding": [{"display": "Rash"}]}],
+                            "severity": "moderate",
+                        }
+                    ],
+                }
+            }
+        ]
     }
 
     client = mock_encounter_client(
-        patients=[patient], encounters=[encounter], vitals=vitals,
-        conditions_bundle=conditions_bundle, medications_bundle=medications_bundle,
+        patients=[patient],
+        encounters=[encounter],
+        vitals=vitals,
+        conditions_bundle=conditions_bundle,
+        medications_bundle=medications_bundle,
         allergies_bundle=allergies_bundle,
     )
 
@@ -206,8 +255,14 @@ async def test_get_encounter_context_output_schema():
     _assert_schema(result, GET_ENCOUNTER_CONTEXT_SCHEMA)
     _assert_schema(result["encounter"], GET_ENCOUNTER_CONTEXT_ENCOUNTER_SCHEMA)
     _assert_schema(result["patient"], GET_ENCOUNTER_CONTEXT_PATIENT_SCHEMA)
-    _assert_keys(result["clinical_context"], {"active_problems", "medications", "allergies", "vitals", "existing_notes"})
-    _assert_keys(result["billing_status"], {"has_dx_codes", "dx_codes", "billing_note", "last_level_billed"})
+    _assert_keys(
+        result["clinical_context"],
+        {"active_problems", "medications", "allergies", "vitals", "existing_notes"},
+    )
+    _assert_keys(
+        result["billing_status"],
+        {"has_dx_codes", "dx_codes", "billing_note", "last_level_billed"},
+    )
 
 
 # -- draft_encounter_note schema tests ----------------------------------------
@@ -226,7 +281,9 @@ async def test_draft_encounter_note_output_schema():
     llm = AsyncMock()
     llm.ainvoke = AsyncMock(return_value=AIMessage(content=json.dumps(llm_response)))
 
-    result = await _draft_encounter_note_impl(client, llm, encounter_id=5, patient_id=10, note_type="SOAP")
+    result = await _draft_encounter_note_impl(
+        client, llm, encounter_id=5, patient_id=10, note_type="SOAP"
+    )
     _assert_schema(result, DRAFT_NOTE_SCHEMA)
     _assert_schema(result["draft_note"], DRAFT_NOTE_INNER_SCHEMA)
 
@@ -239,15 +296,32 @@ async def test_validate_claim_output_schema():
     patient = make_patient()
     encounter = make_encounter()
     billing_rows = [
-        {"code_type": "ICD10", "code": "J06.9", "code_text": "URI", "fee": 0, "modifier": "", "units": 1},
-        {"code_type": "CPT4", "code": "99213", "code_text": "Office visit", "fee": 75.0, "modifier": "", "units": 1},
+        {
+            "code_type": "ICD10",
+            "code": "J06.9",
+            "code_text": "URI",
+            "fee": 0,
+            "modifier": "",
+            "units": 1,
+        },
+        {
+            "code_type": "CPT4",
+            "code": "99213",
+            "code_text": "Office visit",
+            "fee": 75.0,
+            "modifier": "",
+            "units": 1,
+        },
     ]
     insurance = [{"type": "primary", "provider": "1", "policy_number": "POL1"}]
 
     client = mock_claim_client(patients=[patient], encounters=[encounter])
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=billing_rows, insurance_list=insurance,
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=billing_rows,
+        insurance_list=insurance,
     )
     _assert_schema(result, VALIDATE_CLAIM_SCHEMA)
     _assert_schema(result["summary"], VALIDATE_CLAIM_SUMMARY_SCHEMA)
@@ -260,8 +334,11 @@ async def test_validate_claim_error_item_schema():
     client = mock_claim_client(patients=[patient], encounters=[encounter])
 
     result = await _validate_claim_impl(
-        client, patient_id=10, encounter_id=5,
-        billing_rows=[], insurance_list=[],
+        client,
+        patient_id=10,
+        encounter_id=5,
+        billing_rows=[],
+        insurance_list=[],
     )
 
     assert len(result["errors"]) > 0

@@ -48,11 +48,15 @@ def _parse_conditions(bundle: dict[str, Any]) -> list[dict[str, Any]]:
         resource = entry.get("resource", {})
         coding = (resource.get("code") or {}).get("coding", [{}])
         first_code = coding[0] if coding else {}
-        results.append({
-            "code": first_code.get("code", ""),
-            "description": first_code.get("display", resource.get("code", {}).get("text", "")),
-            "onset_date": resource.get("onsetDateTime", ""),
-        })
+        results.append(
+            {
+                "code": first_code.get("code", ""),
+                "description": first_code.get(
+                    "display", resource.get("code", {}).get("text", "")
+                ),
+                "onset_date": resource.get("onsetDateTime", ""),
+            }
+        )
     return results
 
 
@@ -69,11 +73,16 @@ def _parse_medications(bundle: dict[str, Any]) -> list[dict[str, Any]]:
         first_dose = dose_quant[0] if dose_quant else {}
         dose_val = first_dose.get("doseQuantity", {})
         timing = first_dosage.get("timing", {}).get("code", {})
-        results.append({
-            "drug_name": first_code.get("display", resource.get("medicationCodeableConcept", {}).get("text", "")),
-            "dose": f"{dose_val.get('value', '')} {dose_val.get('unit', '')}".strip(),
-            "frequency": timing.get("text", ""),
-        })
+        results.append(
+            {
+                "drug_name": first_code.get(
+                    "display",
+                    resource.get("medicationCodeableConcept", {}).get("text", ""),
+                ),
+                "dose": f"{dose_val.get('value', '')} {dose_val.get('unit', '')}".strip(),
+                "frequency": timing.get("text", ""),
+            }
+        )
     return results
 
 
@@ -90,11 +99,15 @@ def _parse_allergies(bundle: dict[str, Any]) -> list[dict[str, Any]]:
         first_manif = manifestation[0] if manifestation else {}
         manif_coding = first_manif.get("coding", [{}])
         first_manif_code = manif_coding[0] if manif_coding else {}
-        results.append({
-            "substance": first_code.get("display", resource.get("code", {}).get("text", "")),
-            "reaction": first_manif_code.get("display", ""),
-            "severity": first_reaction.get("severity", ""),
-        })
+        results.append(
+            {
+                "substance": first_code.get(
+                    "display", resource.get("code", {}).get("text", "")
+                ),
+                "reaction": first_manif_code.get("display", ""),
+                "severity": first_reaction.get("severity", ""),
+            }
+        )
     return results
 
 
@@ -128,11 +141,13 @@ def _format_soap_notes(notes_list: list[dict[str, Any]]) -> list[dict[str, Any]]
             text = note.get(section, "")
             if text:
                 parts.append(f"{section.upper()}: {text}")
-        results.append({
-            "type": "SOAP",
-            "date": note.get("date", ""),
-            "summary": "; ".join(parts) if parts else "",
-        })
+        results.append(
+            {
+                "type": "SOAP",
+                "date": note.get("date", ""),
+                "summary": "; ".join(parts) if parts else "",
+            }
+        )
     return results
 
 
@@ -195,7 +210,11 @@ async def _get_encounter_context_impl(
     patient_resp = await client.get(
         "/apis/default/api/patient", params={"pid": patient_id}
     )
-    patients = patient_resp.get("data", patient_resp) if isinstance(patient_resp, dict) else patient_resp
+    patients = (
+        patient_resp.get("data", patient_resp)
+        if isinstance(patient_resp, dict)
+        else patient_resp
+    )
     patients = patients if isinstance(patients, list) else []
 
     # OpenEMR may return a broader patient list even when pid is provided.
@@ -213,7 +232,9 @@ async def _get_encounter_context_impl(
 
     # 2. Find the encounter
     enc_resp = await client.get(f"/apis/default/api/patient/{puuid}/encounter")
-    encounters = enc_resp.get("data", enc_resp) if isinstance(enc_resp, dict) else enc_resp
+    encounters = (
+        enc_resp.get("data", enc_resp) if isinstance(enc_resp, dict) else enc_resp
+    )
     encounters = encounters if isinstance(encounters, list) else []
 
     matched_enc = None
@@ -236,7 +257,11 @@ async def _get_encounter_context_impl(
             return {
                 "message": f"Multiple encounters found on {date}. Please specify encounter_id.",
                 "encounters": [
-                    {"id": e.get("id") or e.get("eid"), "date": e.get("date"), "reason": e.get("reason", "")}
+                    {
+                        "id": e.get("id") or e.get("eid"),
+                        "date": e.get("date"),
+                        "reason": e.get("reason", ""),
+                    }
                     for e in date_matches
                 ],
             }
@@ -261,13 +286,17 @@ async def _get_encounter_context_impl(
             return _parse_conditions(bundle), []
         except httpx.HTTPStatusError as exc:
             detail = f"HTTP {exc.response.status_code}"
-            logger.warning("Failed to fetch conditions for patient %s: %s", puuid, detail)
+            logger.warning(
+                "Failed to fetch conditions for patient %s: %s", puuid, detail
+            )
             return [], [f"conditions_fetch_failed: {detail}"]
         except httpx.TimeoutException:
             logger.warning("Timed out fetching conditions for patient %s", puuid)
             return [], ["conditions_fetch_failed: request timed out"]
         except httpx.RequestError as exc:
-            logger.warning("Network error fetching conditions for patient %s: %s", puuid, exc)
+            logger.warning(
+                "Network error fetching conditions for patient %s: %s", puuid, exc
+            )
             return [], ["conditions_fetch_failed: network error retrieving conditions"]
 
     async def _fetch_medications() -> tuple[list[dict[str, Any]], list[str]]:
@@ -279,14 +308,20 @@ async def _get_encounter_context_impl(
             return _parse_medications(bundle), []
         except httpx.HTTPStatusError as exc:
             detail = f"HTTP {exc.response.status_code}"
-            logger.warning("Failed to fetch medications for patient %s: %s", puuid, detail)
+            logger.warning(
+                "Failed to fetch medications for patient %s: %s", puuid, detail
+            )
             return [], [f"medications_fetch_failed: {detail}"]
         except httpx.TimeoutException:
             logger.warning("Timed out fetching medications for patient %s", puuid)
             return [], ["medications_fetch_failed: request timed out"]
         except httpx.RequestError as exc:
-            logger.warning("Network error fetching medications for patient %s: %s", puuid, exc)
-            return [], ["medications_fetch_failed: network error retrieving medications"]
+            logger.warning(
+                "Network error fetching medications for patient %s: %s", puuid, exc
+            )
+            return [], [
+                "medications_fetch_failed: network error retrieving medications"
+            ]
 
     async def _fetch_allergies() -> tuple[list[dict[str, Any]], list[str]]:
         try:
@@ -296,13 +331,17 @@ async def _get_encounter_context_impl(
             return _parse_allergies(bundle), []
         except httpx.HTTPStatusError as exc:
             detail = f"HTTP {exc.response.status_code}"
-            logger.warning("Failed to fetch allergies for patient %s: %s", puuid, detail)
+            logger.warning(
+                "Failed to fetch allergies for patient %s: %s", puuid, detail
+            )
             return [], [f"allergies_fetch_failed: {detail}"]
         except httpx.TimeoutException:
             logger.warning("Timed out fetching allergies for patient %s", puuid)
             return [], ["allergies_fetch_failed: request timed out"]
         except httpx.RequestError as exc:
-            logger.warning("Network error fetching allergies for patient %s: %s", puuid, exc)
+            logger.warning(
+                "Network error fetching allergies for patient %s: %s", puuid, exc
+            )
             return [], ["allergies_fetch_failed: network error retrieving allergies"]
 
     async def _fetch_vitals() -> tuple[dict[str, Any] | None, list[str]]:
@@ -321,7 +360,9 @@ async def _get_encounter_context_impl(
             logger.warning("Timed out fetching vitals for encounter %s", eid)
             return None, ["vitals_fetch_failed: request timed out"]
         except httpx.RequestError as exc:
-            logger.warning("Network error fetching vitals for encounter %s: %s", eid, exc)
+            logger.warning(
+                "Network error fetching vitals for encounter %s: %s", eid, exc
+            )
             return None, ["vitals_fetch_failed: network error retrieving vitals"]
 
     async def _fetch_soap_notes() -> tuple[list[dict[str, Any]], list[str]]:
@@ -334,16 +375,26 @@ async def _get_encounter_context_impl(
             return _format_soap_notes(notes_list), []
         except httpx.HTTPStatusError as exc:
             detail = f"HTTP {exc.response.status_code}"
-            logger.warning("Failed to fetch SOAP notes for encounter %s: %s", eid, detail)
+            logger.warning(
+                "Failed to fetch SOAP notes for encounter %s: %s", eid, detail
+            )
             return [], [f"soap_notes_fetch_failed: {detail}"]
         except httpx.TimeoutException:
             logger.warning("Timed out fetching SOAP notes for encounter %s", eid)
             return [], ["soap_notes_fetch_failed: request timed out"]
         except httpx.RequestError as exc:
-            logger.warning("Network error fetching SOAP notes for encounter %s: %s", eid, exc)
+            logger.warning(
+                "Network error fetching SOAP notes for encounter %s: %s", eid, exc
+            )
             return [], ["soap_notes_fetch_failed: network error retrieving soap notes"]
 
-    (conditions, cond_w), (medications, med_w), (allergies, allergy_w), (vitals, vitals_w), (soap_notes, soap_w) = await asyncio.gather(
+    (
+        (conditions, cond_w),
+        (medications, med_w),
+        (allergies, allergy_w),
+        (vitals, vitals_w),
+        (soap_notes, soap_w),
+    ) = await asyncio.gather(
         _fetch_conditions(),
         _fetch_medications(),
         _fetch_allergies(),
@@ -402,9 +453,7 @@ async def get_encounter_context(
                 date=date,
             )
     except httpx.TimeoutException as exc:
-        raise ToolException(
-            f"OpenEMR API timed out: {exc}. Please try again."
-        ) from exc
+        raise ToolException(f"OpenEMR API timed out: {exc}. Please try again.") from exc
     except httpx.RequestError as exc:
         raise ToolException(
             f"OpenEMR API network error: {exc}. Please check connectivity and try again."

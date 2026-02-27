@@ -40,7 +40,9 @@ class TestSanitizeDict:
 
     def test_phi_output_key_list_value(self):
         """PHI output keys with list values become '[N items]'."""
-        result = _sanitize_dict({"medications": [{"drug": "aspirin"}, {"drug": "tylenol"}]})
+        result = _sanitize_dict(
+            {"medications": [{"drug": "aspirin"}, {"drug": "tylenol"}]}
+        )
         assert result["medications"] == "[2 items]"
 
     def test_phi_output_key_other_value(self):
@@ -224,7 +226,7 @@ class TestLoggedTool:
         with patch(
             "ai_agent.tools._logging.get_current_run_tree",
             create=True,
-        ) as mock_get_rt:
+        ):
             # We need to patch it in the right place — the function imports it inside the wrapper
             with patch(
                 "langsmith.run_helpers.get_current_run_tree",

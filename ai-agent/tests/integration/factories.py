@@ -73,8 +73,7 @@ def insert_billing_row(
             values.append(defaults[col])
 
     sql = (
-        f"INSERT INTO billing ({', '.join(columns)}) "
-        f"VALUES ({', '.join(placeholders)})"
+        f"INSERT INTO billing ({', '.join(columns)}) VALUES ({', '.join(placeholders)})"
     )
 
     cur = conn.cursor()

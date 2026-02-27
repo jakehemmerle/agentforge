@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -22,6 +21,7 @@ def client():
 def _clear_settings_cache():
     """Clear get_settings cache if it exists (safe to call before/after caching is added)."""
     from ai_agent.config import get_settings
+
     if hasattr(get_settings, "cache_clear"):
         get_settings.cache_clear()
 
@@ -79,7 +79,12 @@ def test_chat_collects_tool_calls(client):
             AIMessage(
                 content="",
                 tool_calls=[
-                    {"name": "find_appointments", "args": {"date": "2026-01-01"}, "id": "c1", "type": "tool_call"}
+                    {
+                        "name": "find_appointments",
+                        "args": {"date": "2026-01-01"},
+                        "id": "c1",
+                        "type": "tool_call",
+                    }
                 ],
             ),
             AIMessage(content="Here are the results."),
@@ -138,9 +143,8 @@ def test_stream_returns_event_stream(client):
     assert resp.status_code == 200
     assert "text/event-stream" in resp.headers["content-type"]
     body = resp.text
-    assert "data: Hello" in body
+    assert 'data: "Hello"' in body
     assert "data: [calling:find_appointments]" in body
-    assert "data:  there" in body
     assert "data: [DONE]" in body
 
 
@@ -223,6 +227,7 @@ def test_chat_accepts_correct_api_key(authed_client):
 
 def test_stream_rejects_missing_api_key(authed_client):
     """SSE endpoint also requires API key."""
+
     async def fake_events(*args, **kwargs):
         return
         yield
@@ -277,9 +282,11 @@ def test_chat_extracts_text_from_list_content(client):
     """AIMessage.content can be a list of blocks when Claude uses tools."""
     fake_result = {
         "messages": [
-            AIMessage(content=[
-                {"type": "text", "text": "I'll look that up for you."},
-            ]),
+            AIMessage(
+                content=[
+                    {"type": "text", "text": "I'll look that up for you."},
+                ]
+            ),
         ],
     }
 
@@ -300,10 +307,12 @@ def test_chat_extracts_text_from_mixed_list_content(client):
     """List content with multiple blocks should concatenate text blocks."""
     fake_result = {
         "messages": [
-            AIMessage(content=[
-                {"type": "text", "text": "Here are "},
-                {"type": "text", "text": "the results."},
-            ]),
+            AIMessage(
+                content=[
+                    {"type": "text", "text": "Here are "},
+                    {"type": "text", "text": "the results."},
+                ]
+            ),
         ],
     }
 
@@ -321,12 +330,17 @@ def test_chat_extracts_text_from_mixed_list_content(client):
 
 def test_stream_handles_list_content_chunks(client):
     """Streaming chunks with list content should yield text strings."""
+
     async def fake_events(*args, **kwargs):
         yield {
             "event": "on_chat_model_stream",
-            "data": {"chunk": AIMessage(content=[
-                {"type": "text", "text": "streaming token"},
-            ])},
+            "data": {
+                "chunk": AIMessage(
+                    content=[
+                        {"type": "text", "text": "streaming token"},
+                    ]
+                )
+            },
             "name": "",
         }
 
@@ -339,7 +353,7 @@ def test_stream_handles_list_content_chunks(client):
 
     assert resp.status_code == 200
     body = resp.text
-    assert "data: streaming token" in body
+    assert 'data: "streaming token"' in body
 
 
 # -- graph error handling -----------------------------------------------------
@@ -359,6 +373,7 @@ def test_chat_handles_graph_error(client):
 
 def test_stream_handles_graph_error(client):
     """When graph.astream_events raises, the stream still sends [DONE] so clients don't hang."""
+
     async def failing_events(*args, **kwargs):
         raise RuntimeError("Graph error")
         yield  # make it an async generator

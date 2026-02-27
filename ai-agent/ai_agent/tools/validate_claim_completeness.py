@@ -43,11 +43,13 @@ def _check_diagnosis_codes(
     ]
     errors: list[dict[str, Any]] = []
     if not dx_codes:
-        errors.append({
-            "check": "diagnosis_codes",
-            "message": "Missing diagnosis codes (ICD-10). At least one required.",
-            "severity": rules.check_severities.get("diagnosis_codes", "error"),
-        })
+        errors.append(
+            {
+                "check": "diagnosis_codes",
+                "message": "Missing diagnosis codes (ICD-10). At least one required.",
+                "severity": rules.check_severities.get("diagnosis_codes", "error"),
+            }
+        )
     return errors, dx_codes
 
 
@@ -69,11 +71,13 @@ def _check_procedure_codes(
     total_charges = 0.0
 
     if not cpt_codes:
-        errors.append({
-            "check": "procedure_codes",
-            "message": "Missing procedure codes (CPT). At least one required.",
-            "severity": rules.check_severities.get("procedure_codes", "error"),
-        })
+        errors.append(
+            {
+                "check": "procedure_codes",
+                "message": "Missing procedure codes (CPT). At least one required.",
+                "severity": rules.check_severities.get("procedure_codes", "error"),
+            }
+        )
     else:
         for row in cpt_rows:
             try:
@@ -82,11 +86,13 @@ def _check_procedure_codes(
                 fee = 0.0
             total_charges += fee
             if fee == 0:
-                warnings.append({
-                    "check": "fees",
-                    "message": f"CPT code {row['code']} has no fee assigned.",
-                    "severity": rules.check_severities.get("fees", "warning"),
-                })
+                warnings.append(
+                    {
+                        "check": "fees",
+                        "message": f"CPT code {row['code']} has no fee assigned.",
+                        "severity": rules.check_severities.get("fees", "warning"),
+                    }
+                )
 
     return errors, warnings, cpt_codes, total_charges
 
@@ -101,11 +107,13 @@ def _check_rendering_provider(
     provider_name = ""
 
     if not provider_id or str(provider_id) == "0":
-        errors.append({
-            "check": "rendering_provider",
-            "message": "No rendering provider assigned to encounter.",
-            "severity": rules.check_severities.get("rendering_provider", "error"),
-        })
+        errors.append(
+            {
+                "check": "rendering_provider",
+                "message": "No rendering provider assigned to encounter.",
+                "severity": rules.check_severities.get("rendering_provider", "error"),
+            }
+        )
     else:
         provider_name = f"Provider #{provider_id}"
 
@@ -118,18 +126,19 @@ def _check_billing_facility(
     """Check 4: Billing facility set on the encounter."""
     rules = get_claim_rules()
     billing_facility = encounter.get("billing_facility")
-    facility_name = (
-        encounter.get("billing_facility_name", "")
-        or encounter.get("facility", "")
+    facility_name = encounter.get("billing_facility_name", "") or encounter.get(
+        "facility", ""
     )
     errors: list[dict[str, Any]] = []
 
     if not billing_facility or str(billing_facility) == "0":
-        errors.append({
-            "check": "billing_facility",
-            "message": "No billing facility assigned to encounter.",
-            "severity": rules.check_severities.get("billing_facility", "error"),
-        })
+        errors.append(
+            {
+                "check": "billing_facility",
+                "message": "No billing facility assigned to encounter.",
+                "severity": rules.check_severities.get("billing_facility", "error"),
+            }
+        )
         facility_name = ""
 
     return errors, facility_name
@@ -145,28 +154,31 @@ def _check_demographics(patient: dict[str, Any]) -> list[dict[str, Any]]:
     ]
     errors: list[dict[str, Any]] = []
     if missing:
-        errors.append({
-            "check": "patient_demographics",
-            "message": f"Patient demographics incomplete: missing {', '.join(missing)}.",
-            "severity": rules.check_severities.get("patient_demographics", "error"),
-        })
+        errors.append(
+            {
+                "check": "patient_demographics",
+                "message": f"Patient demographics incomplete: missing {', '.join(missing)}.",
+                "severity": rules.check_severities.get("patient_demographics", "error"),
+            }
+        )
     return errors
 
 
 def _check_insurance(insurance_list: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Check 6: Primary insurance on file."""
     has_primary = any(
-        (ins.get("type") or "").upper() == "PRIMARY"
-        for ins in insurance_list
+        (ins.get("type") or "").upper() == "PRIMARY" for ins in insurance_list
     )
     rules = get_claim_rules()
     warnings: list[dict[str, Any]] = []
     if not has_primary:
-        warnings.append({
-            "check": "insurance",
-            "message": "No primary insurance on file. Verify if self-pay.",
-            "severity": rules.check_severities.get("insurance", "warning"),
-        })
+        warnings.append(
+            {
+                "check": "insurance",
+                "message": "No primary insurance on file. Verify if self-pay.",
+                "severity": rules.check_severities.get("insurance", "warning"),
+            }
+        )
     return warnings
 
 
@@ -192,7 +204,11 @@ async def _validate_claim_impl(
     patient_resp = await client.get(
         "/apis/default/api/patient", params={"pid": patient_id}
     )
-    patients = patient_resp.get("data", patient_resp) if isinstance(patient_resp, dict) else patient_resp
+    patients = (
+        patient_resp.get("data", patient_resp)
+        if isinstance(patient_resp, dict)
+        else patient_resp
+    )
     patients = patients if isinstance(patients, list) else []
 
     # The API may not filter by pid — match client-side.
@@ -209,7 +225,9 @@ async def _validate_claim_impl(
 
     # 2. Find the encounter
     enc_resp = await client.get(f"/apis/default/api/patient/{puuid}/encounter")
-    encounters = enc_resp.get("data", enc_resp) if isinstance(enc_resp, dict) else enc_resp
+    encounters = (
+        enc_resp.get("data", enc_resp) if isinstance(enc_resp, dict) else enc_resp
+    )
     encounters = encounters if isinstance(encounters, list) else []
 
     matched_enc = None
@@ -322,7 +340,11 @@ async def validate_claim_ready_completeness(
                 patient_resp = await client.get(
                     "/apis/default/api/patient", params={"pid": patient_id}
                 )
-                patients = patient_resp.get("data", patient_resp) if isinstance(patient_resp, dict) else patient_resp
+                patients = (
+                    patient_resp.get("data", patient_resp)
+                    if isinstance(patient_resp, dict)
+                    else patient_resp
+                )
                 patients = patients if isinstance(patients, list) else []
                 matched = next(
                     (p for p in patients if str(p.get("pid")) == str(patient_id)),
@@ -334,14 +356,20 @@ async def validate_claim_ready_completeness(
                         ins_resp = await client.get(
                             f"/apis/default/api/patient/{puuid}/insurance"
                         )
-                        ins_data = ins_resp.get("data", ins_resp) if isinstance(ins_resp, dict) else ins_resp
+                        ins_data = (
+                            ins_resp.get("data", ins_resp)
+                            if isinstance(ins_resp, dict)
+                            else ins_resp
+                        )
                         insurance_list = ins_data if isinstance(ins_data, list) else []
             except httpx.HTTPStatusError as exc:
                 detail = f"HTTP {exc.response.status_code}"
                 logger.warning("Failed to fetch insurance data: %s", detail)
                 fetch_data_warnings.append(f"insurance_fetch_failed: {detail}")
             except httpx.TimeoutException:
-                logger.warning("Timed out fetching insurance data for patient %s", patient_id)
+                logger.warning(
+                    "Timed out fetching insurance data for patient %s", patient_id
+                )
                 fetch_data_warnings.append("insurance_fetch_failed: request timed out")
             except httpx.RequestError as exc:
                 logger.warning("Failed to fetch insurance data: %s", exc)
@@ -358,9 +386,7 @@ async def validate_claim_ready_completeness(
                 data_warnings=fetch_data_warnings,
             )
     except httpx.TimeoutException as exc:
-        raise ToolException(
-            f"OpenEMR API timed out: {exc}. Please try again."
-        ) from exc
+        raise ToolException(f"OpenEMR API timed out: {exc}. Please try again.") from exc
     except httpx.RequestError as exc:
         raise ToolException(
             f"OpenEMR API network error: {exc}. Please check connectivity and try again."

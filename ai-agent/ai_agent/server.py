@@ -29,6 +29,7 @@ def _extract_text(content: Any) -> str:
         )
     return str(content)
 
+
 # -- logging config ------------------------------------------------------------
 
 _json_formatter = JsonFormatter(
@@ -159,6 +160,11 @@ async def stream(req: ChatRequest):
     }
 
     async def event_generator():
+        # Track active tool depth so we can suppress LLM tokens that
+        # originate from nested LLM calls *inside* tools (e.g. the
+        # scribe model in draft_encounter_note).  Only the outer
+        # agent's LLM tokens should be streamed to the client.
+        tool_depth = 0
         try:
             async for event in graph.astream_events(
                 {"messages": [HumanMessage(content=req.message)]},
@@ -167,6 +173,8 @@ async def stream(req: ChatRequest):
             ):
                 kind = event.get("event", "")
                 if kind == "on_chat_model_stream":
+                    if tool_depth > 0:
+                        continue
                     chunk = event.get("data", {}).get("chunk")
                     if chunk and hasattr(chunk, "content") and chunk.content:
                         text = _extract_text(chunk.content)
@@ -174,10 +182,12 @@ async def stream(req: ChatRequest):
                             # JSON-encode to preserve newlines in SSE framing
                             yield f"data: {json.dumps(text)}\n\n"
                 elif kind == "on_tool_start":
+                    tool_depth += 1
                     name = event.get("name", "")
                     if name:
                         yield f"data: [calling:{name}]\n\n"
                 elif kind == "on_tool_end":
+                    tool_depth = max(tool_depth - 1, 0)
                     name = event.get("name", "")
                     output = event.get("data", {}).get("output")
                     if name and output:
@@ -192,9 +202,7 @@ async def stream(req: ChatRequest):
                             content = str(content)
                         if len(content) > 2000:
                             content = content[:2000] + "\n..."
-                        payload = json.dumps(
-                            {"name": name, "content": content}
-                        )
+                        payload = json.dumps({"name": name, "content": content})
                         yield f"data: [tool_done]{payload}\n\n"
         except Exception:
             logger.exception("Streaming error for session %s", req.session_id)

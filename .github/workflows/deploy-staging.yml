@@ -141,25 +141,7 @@ jobs:
               AGENT_OK=1
             fi
 
-            if [ -n "$READYZ_JSON" ] && python - "$READYZ_JSON" <<'PY'
-import json
-import sys
-
-try:
-    payload = json.loads(sys.argv[1])
-except Exception:
-    raise SystemExit(1)
-
-status = payload.get("status")
-checks = payload.get("checks", {})
-required_checks = ["database", "filesystem", "session", "oauth_keys", "cache"]
-
-if status not in {"ok", "setup_required"}:
-    raise SystemExit(1)
-
-if not all(checks.get(key) is True for key in required_checks):
-    raise SystemExit(1)
-PY
+            if [ -n "$READYZ_JSON" ] && python -c 'import json, sys; payload = json.loads(sys.argv[1]); checks = payload.get("checks", {}); required = ["database", "filesystem", "session", "oauth_keys", "cache"]; ok = payload.get("status") in ("ok", "setup_required") and all(checks.get(key) is True for key in required); sys.exit(0 if ok else 1)' "$READYZ_JSON"
             then
               READYZ_OK=1
             fi

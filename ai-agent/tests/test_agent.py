@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from ai_agent.agent import (
     SYSTEM_PROMPT,
     AgentState,
+    _settings,
     call_llm,
     graph,
     route,
@@ -27,10 +28,15 @@ def test_graph_compiles():
     assert type(graph).__name__ == "CompiledStateGraph"
 
 
+def test_graph_uses_checkpointer():
+    assert type(graph.checkpointer).__name__ == "InMemorySaver"
+
+
 def test_graph_has_expected_nodes():
     node_names = set(graph.nodes.keys())
     assert "agent" in node_names
     assert "tools" in node_names
+    assert "verify" in node_names
 
 
 def test_tools_list_contains_find_appointments():
@@ -69,7 +75,7 @@ def test_route_returns_end_for_plain_message():
         "user_id": "test",
         "error": None,
     }
-    assert route(state) == "__end__"
+    assert route(state) == "verify"
 
 
 def test_route_returns_tools_for_tool_calls():
@@ -99,20 +105,20 @@ def test_route_returns_end_for_empty_tool_calls():
         "user_id": "test",
         "error": None,
     }
-    assert route(state) == "__end__"
+    assert route(state) == "verify"
 
 
 # -- error & edge case tests ---------------------------------------------------
 
 
 def test_route_handles_non_ai_message():
-    """HumanMessage (no tool_calls attr) should route to __end__."""
+    """HumanMessage (no tool_calls attr) should route to verify."""
     state: AgentState = {
         "messages": [HumanMessage(content="Hello")],
         "user_id": "test",
         "error": None,
     }
-    assert route(state) == "__end__"
+    assert route(state) == "verify"
 
 
 async def test_call_llm_returns_messages_key():
@@ -160,12 +166,13 @@ async def test_call_llm_propagates_llm_error():
 
 
 def test_tools_list_contains_all_expected_tools():
-    """All 4 registered tools should be present."""
+    """All 5 registered tools should be present."""
     tool_names = sorted(t.name for t in tools)
     assert tool_names == [
         "draft_encounter_note",
         "find_appointments",
         "get_encounter_context",
+        "get_patient_summary",
         "validate_claim_ready_completeness",
     ]
 
@@ -181,3 +188,29 @@ async def test_call_llm_with_empty_messages():
     # Only the SystemMessage should be in the list
     assert len(call_args) == 1
     assert isinstance(call_args[0], SystemMessage)
+
+
+async def test_call_llm_compacts_history(monkeypatch):
+    """Long histories should be compacted before invoking the model."""
+    monkeypatch.setattr(_settings, "max_history_messages", 2)
+    monkeypatch.setattr(_settings, "max_history_tokens", 10000)
+
+    with patch("ai_agent.agent.model_with_tools") as mock_model:
+        mock_model.ainvoke = AsyncMock(return_value=AIMessage(content="response"))
+        await call_llm(
+            {
+                "messages": [
+                    HumanMessage(content="first"),
+                    AIMessage(content="second"),
+                    HumanMessage(content="third"),
+                ],
+                "user_id": "u1",
+                "error": None,
+            }
+        )
+
+    call_args = mock_model.ainvoke.call_args[0][0]
+    assert isinstance(call_args[0], SystemMessage)
+    assert len(call_args) == 3
+    assert call_args[1].content == "second"
+    assert call_args[2].content == "third"

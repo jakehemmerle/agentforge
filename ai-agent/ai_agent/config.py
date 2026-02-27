@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     openemr_username: str = "admin"
     openemr_password: str = "pass"
 
+    checkpoint_db_path: str = ".langgraph/checkpoints.sqlite"
+    max_history_messages: int = 40
+    max_history_tokens: int = 6000
+
     # Deprecated: DB fields are used only by the server's internal billing
     # endpoint. Agent tools should use the /internal/billing HTTP endpoint
     # instead of connecting to the database directly.

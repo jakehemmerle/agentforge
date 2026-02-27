@@ -1,0 +1,66 @@
+disclosure_keywords:
+  - warning
+  - caveat
+  - unavailable
+  - incomplete
+  - could not
+  - couldn't
+  - unable
+  - failed
+
+readiness_positive_patterns:
+  - '\bclaim\s+(is\s+)?ready\b'
+  - '\bready\s+for\s+submission\b'
+  - '\bready\s+to\s+submit\b'
+
+readiness_negative_patterns:
+  - '\bnot\s+ready\b'
+  - '\bisn''t\s+ready\b'
+  - '\bnot\s+ready\s+for\s+submission\b'
+
+warning_phrase_guards:
+  billing_fetch_failed:
+    - '\bclaim\s+(is\s+)?ready\b'
+    - '\bready\s+for\s+submission\b'
+  vitals_fetch_failed:
+    - '\bblood pressure\b'
+    - '\bbp\b'
+    - '\bheart rate\b'
+    - '\bhr\b'
+    - '\bspo2\b'
+    - '\boxygen saturation\b'
+    - '\brespiratory rate\b'
+    - '\btemperature\b'
+    - '\btemp\b'
+    - '\b\d{2,3}/\d{2,3}\b'
+  soap_notes_fetch_failed:
+    - '\bsubjective\b'
+    - '\bobjective\b'
+    - '\bassessment\b'
+    - '\bplan\b'
+  medications_fetch_failed:
+    - '\bmetformin\b'
+    - '\blisinopril\b'
+    - '\bamlodipine\b'
+    - '\batorvastatin\b'
+    - '\bdosage\b'
+    - '\b\d+\s*mg\b'
+    - '\btwice daily\b'
+    - '\bonce daily\b'
+    - '\bdrug\b'
+    - '\bprescri\w*'
+  conditions_fetch_failed:
+    - '\bdiabetes\b'
+    - '\bhypertension\b'
+    - '\bicd\b'
+    - '\bdiagnos\w*'
+    - '\be11\b'
+    - '\bi10\b'
+    - '\basthma\b'
+    - '\bcopd\b'
+  allergies_fetch_failed:
+    - '\bnkda\b'
+    - '\bno known drug allergies\b'
+
+confidence:
+  warning_threshold_for_medium: 1

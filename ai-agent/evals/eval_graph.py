@@ -27,6 +27,7 @@ from ai_agent.tools.get_encounter_context import (
 from ai_agent.tools.validate_claim_completeness import (
     validate_claim_ready_completeness as real_validate_claim,
 )
+from ai_agent.verification.node import verify_final_response
 
 from evals.fixtures.registry import get_fixture
 
@@ -98,8 +99,12 @@ def create_eval_graph(scenario_name: str):
     builder = StateGraph(AgentState)
     builder.add_node("agent", _make_call_llm(model_with_tools))
     builder.add_node("tools", ToolNode(mock_tools, handle_tool_errors=True))
+    builder.add_node("verify", verify_final_response)
     builder.add_edge(START, "agent")
-    builder.add_conditional_edges("agent", route, {"tools": "tools", END: END})
+    builder.add_conditional_edges(
+        "agent", route, {"tools": "tools", "verify": "verify"}
+    )
     builder.add_edge("tools", "agent")
+    builder.add_edge("verify", END)
 
     return builder.compile(checkpointer=MemorySaver(), name="eval_chat")

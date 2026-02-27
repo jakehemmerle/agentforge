@@ -1,4 +1,4 @@
-"""YAML config loader — loads claim_rules.yaml and prompts.yaml at startup."""
+"""YAML config loader — loads rules and prompts at startup."""
 
 from __future__ import annotations
 
@@ -32,6 +32,22 @@ class Prompts(BaseModel):
     note_type_templates: dict[str, str]
 
 
+class VerificationConfidenceRules(BaseModel):
+    """Thresholds for confidence scoring."""
+
+    warning_threshold_for_medium: int = 1
+
+
+class VerificationRules(BaseModel):
+    """Validated runtime response-verification rules."""
+
+    disclosure_keywords: list[str]
+    readiness_positive_patterns: list[str]
+    readiness_negative_patterns: list[str]
+    warning_phrase_guards: dict[str, list[str]]
+    confidence: VerificationConfidenceRules
+
+
 # -- loaders ------------------------------------------------------------------
 
 
@@ -57,3 +73,10 @@ def get_prompts() -> Prompts:
     """Load and validate prompts.yaml. Result is cached as a singleton."""
     data = _load_yaml("prompts.yaml")
     return Prompts(**data)
+
+
+@lru_cache(maxsize=1)
+def get_verification_rules() -> VerificationRules:
+    """Load and validate verification_rules.yaml. Cached singleton."""
+    data = _load_yaml("verification_rules.yaml")
+    return VerificationRules(**data)

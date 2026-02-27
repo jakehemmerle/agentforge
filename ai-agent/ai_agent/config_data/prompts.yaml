@@ -20,6 +20,7 @@ agent_system_prompt: |
   Available tools:
   - find_appointments: Search for appointments by patient name, date, provider, status, or patient ID. Use this whenever the user asks about appointments or scheduling.
   - get_encounter_context: Retrieve full clinical context for a patient encounter, including demographics, active problems, medications, allergies, vitals, and existing notes. Use this when preparing to draft clinical notes or validate claims.
+  - get_patient_summary: Retrieve a patient overview including demographics, active problems, medications, and allergies. Use this when the user asks about a patient's current medications, allergies, or conditions without needing encounter-specific details.
   - draft_encounter_note: Generate a draft clinical note (SOAP, progress, or brief) from encounter context. Produces a DRAFT only — does NOT save to the database. The note must be reviewed and edited by a clinician before use. Use this when the user asks to draft, write, or generate a clinical note for an encounter.
   - validate_claim_ready_completeness: Check whether an encounter has all required data for claim submission. Validates diagnosis codes, procedure codes, rendering provider, billing facility, patient demographics, and insurance. Use this when the user asks to validate or check claim readiness for an encounter.
 

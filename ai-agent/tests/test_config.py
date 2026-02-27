@@ -23,8 +23,22 @@ def _clear_settings_cache():
 
 
 class TestSettingsModel:
-    def test_default_values(self):
+    def test_default_values(self, monkeypatch):
         """Settings has expected default values."""
+        for key in (
+            "DB_HOST",
+            "DB_PORT",
+            "DB_NAME",
+            "DB_USER",
+            "DB_PASSWORD",
+            "MODEL_NAME",
+            "OPENEMR_USERNAME",
+            "API_KEY",
+            "LANGSMITH_TRACING",
+            "LANGSMITH_PROJECT",
+        ):
+            monkeypatch.delenv(key, raising=False)
+
         s = Settings(_env_file=None)
         assert s.model_name == "claude-sonnet-4-5"
         assert s.db_host == "mysql"

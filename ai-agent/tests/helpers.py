@@ -187,6 +187,30 @@ def mock_fhir_timeout_client(
     return client
 
 
+def mock_patient_summary_client(
+    patients: list | None = None,
+    conditions_bundle: dict | None = None,
+    medications_bundle: dict | None = None,
+    allergies_bundle: dict | None = None,
+) -> AsyncMock:
+    """Build a mock OpenEMRClient for patient-summary tests."""
+    client = AsyncMock()
+
+    async def mock_get(path: str, params: dict | None = None) -> dict:
+        if "/fhir/Condition" in path:
+            return conditions_bundle or {"entry": []}
+        if "/fhir/MedicationRequest" in path:
+            return medications_bundle or {"entry": []}
+        if "/fhir/AllergyIntolerance" in path:
+            return allergies_bundle or {"entry": []}
+        if "/patient" in path:
+            return {"data": patients or []}
+        return {"data": []}
+
+    client.get = AsyncMock(side_effect=mock_get)
+    return client
+
+
 def find_patient_uuid(patients: list[dict], pid: int) -> str:
     """Find the UUID for a specific pid in a list of patient records."""
     for p in patients:

@@ -272,6 +272,7 @@
 /* Tool call – collapsible */
 .ai-chat-tool {
     align-self: stretch;
+    flex-shrink: 0;
     border: 1px solid #dee2e6;
     border-radius: 8px;
     overflow: hidden;

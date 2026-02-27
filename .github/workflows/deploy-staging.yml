@@ -133,8 +133,38 @@ jobs:
           echo "AI Agent Health URL: $AGENT_HEALTH_URL"
 
           for attempt in $(seq 1 90); do
-            if curl -sf "$OPENEMR_URL/meta/health/readyz" >/dev/null && \
-               curl -sf "$AGENT_HEALTH_URL" >/dev/null; then
+            READYZ_JSON="$(curl -fsS "$OPENEMR_URL/meta/health/readyz" || true)"
+            AGENT_OK=0
+            READYZ_OK=0
+
+            if curl -fsS "$AGENT_HEALTH_URL" >/dev/null; then
+              AGENT_OK=1
+            fi
+
+            if [ -n "$READYZ_JSON" ] && python - "$READYZ_JSON" <<'PY'
+import json
+import sys
+
+try:
+    payload = json.loads(sys.argv[1])
+except Exception:
+    raise SystemExit(1)
+
+status = payload.get("status")
+checks = payload.get("checks", {})
+required_checks = ["database", "filesystem", "session", "oauth_keys", "cache"]
+
+if status not in {"ok", "setup_required"}:
+    raise SystemExit(1)
+
+if not all(checks.get(key) is True for key in required_checks):
+    raise SystemExit(1)
+PY
+            then
+              READYZ_OK=1
+            fi
+
+            if [ "$READYZ_OK" -eq 1 ] && [ "$AGENT_OK" -eq 1 ]; then
               echo "Health checks passed"
               exit 0
             fi

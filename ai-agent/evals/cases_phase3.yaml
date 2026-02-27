@@ -1,0 +1,171 @@
+  # ── Negative cases (Phase 3) ─────────────────────────────────────────
+
+  - name: draft_note_nonexistent
+    category: negative
+    query: "Draft a SOAP note for patient 999999, encounter 999999"
+    scenario: draft_note_nonexistent
+    expected:
+      tools: [get_encounter_context]
+      keywords: [found, patient, "999999"]
+    tags: [negative, clinical, notes]
+    no_hallucination: true
+
+  - name: validate_wrong_encounter
+    category: negative
+    query: "Validate claim for patient 90001, encounter 999999"
+    scenario: validate_wrong_encounter
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [found, encounter, "999999"]
+    tags: [negative, billing]
+    no_hallucination: true
+
+  - name: find_empty_date
+    category: negative
+    query: "Find John Doe's appointments from 2025-01-01"
+    scenario: find_empty_date
+    expected:
+      tools: [find_appointments]
+      keywords: [no, appointment, "2025-01-01"]
+      hallucination_markers: ["09:00", "10:00", "office visit", "checkup", "scheduled for"]
+    tags: [negative, appointments]
+    no_hallucination: true
+
+  - name: find_no_match_name
+    category: negative
+    query: "Find appointments for John Smith"
+    scenario: find_no_match_name
+    expected:
+      tools: [find_appointments]
+      keywords: [no, found, "John Smith"]
+    tags: [negative, appointments]
+    no_hallucination: true
+
+  - name: billing_fetch_failed
+    category: negative
+    query: "Check claim for patient 90001, encounter 900001"
+    scenario: billing_fetch_failed
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [claim, billing]
+    tags: [negative, billing]
+
+  - name: find_cancelled
+    category: negative
+    query: "Find cancelled appointments for Maria Garcia"
+    scenario: find_cancelled
+    expected:
+      tools: [find_appointments]
+      keywords: [no, cancel, "Maria Garcia"]
+    tags: [negative, appointments]
+    no_hallucination: true
+
+  - name: context_billing_failed
+    category: negative
+    query: "Get context for patient 90001, encounter 900001"
+    scenario: context_billing_failed
+    expected:
+      tools: [get_encounter_context]
+      keywords: [patient, encounter]
+    tags: [negative, clinical]
+
+  - name: draft_multiple_warnings
+    category: negative
+    query: "Draft a brief note for patient 90003, encounter 900003"
+    scenario: draft_multiple_warnings
+    expected:
+      tools: [get_encounter_context, draft_encounter_note]
+      keywords: [note, patient]
+    tags: [negative, clinical, notes]
+
+  - name: validate_insurance_failed
+    category: negative
+    query: "Validate claim for patient 90001, encounter 900001"
+    scenario: validate_insurance_failed
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [claim, insurance]
+    tags: [negative, billing]
+
+  # ── Edge cases (Phase 3) ────────────────────────────────────────────
+
+  - name: encounter_no_vitals
+    category: edge_case
+    query: "Draft a SOAP note for patient 90002, encounter 900002"
+    scenario: encounter_no_vitals
+    expected:
+      tools: [get_encounter_context, draft_encounter_note]
+      keywords: [Subjective, Objective, Assessment, Plan]
+    tags: [edge_case, clinical, notes]
+
+  - name: claim_missing_insurance
+    category: edge_case
+    query: "Check claim for patient 90002, encounter 900002"
+    scenario: claim_missing_insurance
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [insurance, not ready]
+    tags: [edge_case, billing]
+
+  - name: claim_no_fees
+    category: edge_case
+    query: "Validate claim for patient 90001, encounter 900001"
+    scenario: claim_no_fees
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [claim, ready]
+    tags: [edge_case, billing]
+
+  - name: find_by_provider
+    category: edge_case
+    query: "Find appointments for Dr. Smith's patients"
+    scenario: find_by_provider
+    expected:
+      tools: [find_appointments]
+      keywords: [Dr. Smith, appointment]
+    tags: [edge_case, appointments]
+
+  - name: find_partial_name
+    category: edge_case
+    query: "Find appointments for patients named Doe"
+    scenario: find_partial_name
+    expected:
+      tools: [find_appointments]
+      keywords: [Doe, appointment]
+    tags: [edge_case, appointments]
+
+  - name: context_no_soap
+    category: edge_case
+    query: "Get context for patient 90002, encounter 900002"
+    scenario: context_no_soap
+    expected:
+      tools: [get_encounter_context]
+      keywords: [Jane, Smith, encounter]
+    tags: [edge_case, clinical]
+
+  - name: context_no_allergies
+    category: edge_case
+    query: "Get clinical context for patient 90003, encounter 900003"
+    scenario: context_no_allergies
+    expected:
+      tools: [get_encounter_context]
+      keywords: [Robert, Johnson, no known]
+    tags: [edge_case, clinical]
+
+  - name: draft_invalid_note_type
+    category: edge_case
+    query: "Draft a radiology report for patient 90001, encounter 900001"
+    scenario: draft_invalid_note_type
+    expected:
+      tools: [get_encounter_context, draft_encounter_note]
+      keywords: [note, patient]
+    tags: [edge_case, clinical, notes]
+
+  - name: find_many_results
+    category: edge_case
+    query: "Find all appointments this week"
+    scenario: find_many_results
+    expected:
+      tools: [find_appointments]
+      keywords: [appointment]
+    tags: [edge_case, appointments]

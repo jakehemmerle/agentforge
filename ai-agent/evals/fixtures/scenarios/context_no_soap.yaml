@@ -1,0 +1,52 @@
+# Scenario: Get context with no existing SOAP notes.
+
+name: context_no_soap
+description: >
+  Get encounter context for Jane Smith where no SOAP notes exist yet.
+
+tools:
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900002
+        date: "2026-02-24 10:00:00"
+        reason: "Annual wellness exam"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Established Patient"
+      patient:
+        id: 90002
+        name: "Jane Smith"
+        dob: "1990-07-22"
+        sex: "Female"
+        mrn: "TEST002"
+      clinical_context:
+        active_problems:
+          - code: "Z00.00"
+            description: "Encounter for general adult medical examination without abnormal findings"
+            onset_date: "2026-02-24"
+        medications: []
+        allergies: []
+        vitals:
+          temp: "98.4"
+          bp: "116/72"
+          hr: "66"
+          rr: "14"
+          spo2: "99"
+          weight: "135"
+          height: "65"
+        existing_notes: []
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+      data_warnings: []

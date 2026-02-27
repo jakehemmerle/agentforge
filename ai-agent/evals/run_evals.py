@@ -83,7 +83,11 @@ async def agent_target(inputs: dict) -> dict:
             elif msg.content:
                 final_response = msg.content
 
-    return {"response": final_response, "tool_calls": tool_names}
+    return {
+        "response": final_response,
+        "tool_calls": tool_names,
+        "verification": result.get("verification"),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -220,7 +224,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--category",
-        help="Filter by category (happy_path, negative, adversarial)",
+        help="Filter by category (happy_path, negative, edge_case, adversarial, verification, multi_step)",
     )
     parser.add_argument(
         "--tags",

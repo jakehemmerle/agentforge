@@ -1,0 +1,13 @@
+# Scenario: Find appointments for a name with no matches.
+
+name: find_no_match_name
+description: >
+  Search for a patient name that partially matches but has no exact match.
+  Agent should report no patients found.
+
+tools:
+  find_appointments:
+    _default:
+      appointments: []
+      total_count: 0
+      message: "No patients found matching 'John Smith'."

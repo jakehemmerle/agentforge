@@ -1,0 +1,73 @@
+# Scenario: Find appointment then get clinical context.
+
+name: appointments_then_context
+description: >
+  Multi-tool: find Maria Garcia's appointment today, then get her
+  clinical encounter context.
+
+tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1007
+          patient_name: "Maria Garcia"
+          patient_id: 90004
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "13:00:00"
+          end_time: "13:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Headache and fatigue"
+      total_count: 1
+
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900004
+        date: "2026-02-24 13:00:00"
+        reason: "Headache and fatigue"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Office Visit"
+      patient:
+        id: 90004
+        name: "Maria Garcia"
+        dob: "1992-04-18"
+        sex: "Female"
+        mrn: "TEST004"
+      clinical_context:
+        active_problems:
+          - code: "R51.9"
+            description: "Headache, unspecified"
+            onset_date: "2026-02-10"
+        medications:
+          - drug_name: "Acetaminophen"
+            dose: "500 mg"
+            frequency: "as needed"
+        allergies: []
+        vitals:
+          temp: "98.2"
+          bp: "118/74"
+          hr: "68"
+          rr: "14"
+          spo2: "99"
+          weight: "140"
+          height: "64"
+        existing_notes: []
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+      data_warnings: []

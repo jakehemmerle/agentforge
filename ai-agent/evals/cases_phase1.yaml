@@ -1,0 +1,53 @@
+  # ── Verification cases (Phase 1) ──────────────────────────────────────
+
+  - name: verify_pass_clean_claim
+    category: verification
+    query: "Check if claim for patient 90001, encounter 900001 is ready"
+    scenario: verify_pass_clean_claim
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [ready, claim]
+      verification_decision: pass
+    tags: [verification, billing, pass]
+
+  - name: verify_pass_claim_not_ready
+    category: verification
+    query: "Validate claim for patient 90002, encounter 900002"
+    scenario: verify_pass_claim_not_ready
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [not ready, ICD-10, missing]
+      verification_decision: pass
+    tags: [verification, billing, pass]
+
+  - name: verify_warn_undisclosed_warning
+    category: verification
+    query: "Summarize encounter for patient 90003, encounter 900003"
+    scenario: verify_warn_undisclosed_warning
+    expected:
+      tools: [get_encounter_context]
+      keywords: [patient, encounter]
+      verification_decision: warn
+    tags: [verification, clinical, warn]
+
+  - name: verify_fail_prohibited_vitals
+    category: verification
+    query: "What were the vital signs for patient 90001, encounter 900001?"
+    scenario: verify_fail_prohibited_vitals
+    expected:
+      tools: [get_encounter_context]
+      keywords: []
+      verification_decision: fail
+      prohibited_keywords: []
+    tags: [verification, clinical, fail]
+
+  - name: verify_fail_false_claim_ready
+    category: verification
+    query: "Confirm claim for patient 90002, encounter 900002 is ready to submit"
+    scenario: verify_fail_false_claim_ready
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [not ready]
+      verification_decision: fail
+      prohibited_keywords: []
+    tags: [verification, billing, fail]

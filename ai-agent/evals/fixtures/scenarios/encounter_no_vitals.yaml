@@ -1,0 +1,68 @@
+# Scenario: Draft SOAP for encounter with no vitals data.
+
+name: encounter_no_vitals
+description: >
+  Draft a SOAP note for Jane Smith's encounter with no vitals recorded.
+  The note should acknowledge the absence of vitals.
+
+tools:
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900002
+        date: "2026-02-24 10:00:00"
+        reason: "Annual wellness exam"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Established Patient"
+      patient:
+        id: 90002
+        name: "Jane Smith"
+        dob: "1990-07-22"
+        sex: "Female"
+        mrn: "TEST002"
+      clinical_context:
+        active_problems: []
+        medications: []
+        allergies: []
+        vitals: {}
+        existing_notes: []
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+      data_warnings: []
+
+  draft_encounter_note:
+    _default:
+      draft_note:
+        type: "SOAP"
+        content:
+          subjective: "Patient presents for annual wellness exam. No acute complaints."
+          objective: "Vitals not yet recorded. No physical exam findings documented."
+          assessment: "Annual wellness visit (Z00.00)"
+          plan: "Complete vitals and physical exam. Age-appropriate screenings."
+        full_text: >-
+          S: Patient presents for annual wellness exam. No acute complaints.
+
+          O: Vitals not yet recorded. No physical exam findings documented.
+
+          A: Annual wellness visit (Z00.00)
+
+          P: Complete vitals and physical exam. Age-appropriate screenings.
+        encounter_id: 900002
+        patient_name: "Jane Smith"
+        generated_at: "2026-02-24T11:00:00+00:00"
+      warnings:
+        - "No vitals recorded for this encounter"
+      data_warnings: []
+      disclaimer: "This is an AI-generated draft. Review and edit before saving."

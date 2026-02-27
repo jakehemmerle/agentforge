@@ -1,0 +1,22 @@
+# Scenario: Validate claim with no primary insurance.
+
+name: claim_missing_insurance
+description: >
+  Validate claim for Jane Smith's encounter. Not ready because
+  no primary insurance is on file.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: false
+      errors: []
+      warnings:
+        - "No primary insurance on file"
+      summary:
+        patient_id: 90002
+        encounter_id: 900002
+        diagnosis_codes: ["Z00.00"]
+        procedure_codes: ["99395"]
+        has_primary_insurance: false
+        claim_status: "not_ready"
+      data_warnings: []

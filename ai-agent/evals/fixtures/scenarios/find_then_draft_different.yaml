@@ -1,0 +1,85 @@
+# Scenario: Find Jane Smith's appointments and draft note for her encounter.
+
+name: find_then_draft_different
+description: >
+  Multi-step: find Jane Smith's appointments and draft a brief note
+  for encounter 900002.
+
+tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1004
+          patient_name: "Jane Smith"
+          patient_id: 90002
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "10:00:00"
+          end_time: "10:15:00"
+          status: ">"
+          status_label: "Checked out"
+          category: "Established Patient"
+          facility: "Your Clinic Name Here"
+          reason: "Annual wellness exam"
+      total_count: 1
+
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900002
+        date: "2026-02-24 10:00:00"
+        reason: "Annual wellness exam"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Established Patient"
+      patient:
+        id: 90002
+        name: "Jane Smith"
+        dob: "1990-07-22"
+        sex: "Female"
+        mrn: "TEST002"
+      clinical_context:
+        active_problems: []
+        medications: []
+        allergies: []
+        vitals:
+          temp: "98.4"
+          bp: "116/72"
+          hr: "66"
+          rr: "14"
+          spo2: "99"
+          weight: "135"
+          height: "65"
+        existing_notes: []
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+      data_warnings: []
+
+  draft_encounter_note:
+    _default:
+      draft_note:
+        type: "brief"
+        content:
+          summary: >-
+            Jane Smith, 35F, presents for annual wellness exam.
+            Vitals within normal limits. No active problems.
+        full_text: >-
+          Jane Smith, 35F, annual wellness exam. Vitals WNL.
+          No active problems, medications, or allergies on file.
+        encounter_id: 900002
+        patient_name: "Jane Smith"
+        generated_at: "2026-02-24T11:00:00+00:00"
+      warnings: []
+      data_warnings: []
+      disclaimer: "This is an AI-generated draft. Review and edit before saving."

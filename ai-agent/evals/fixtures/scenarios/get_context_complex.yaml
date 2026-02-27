@@ -1,0 +1,99 @@
+# Scenario: Get encounter context with complex clinical data.
+
+name: get_context_complex
+description: >
+  Retrieve context for James Wilson's encounter with rich data —
+  5 active problems, 5 medications, 2 allergies.
+
+tools:
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900005
+        date: "2026-02-24 16:00:00"
+        reason: "Diabetes management follow-up"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Office Visit"
+
+      patient:
+        id: 90005
+        name: "James Wilson"
+        dob: "1965-08-30"
+        sex: "Male"
+        mrn: "TEST005"
+
+      clinical_context:
+        active_problems:
+          - code: "E11.65"
+            description: "Type 2 diabetes mellitus with hyperglycemia"
+            onset_date: "2015-03-10"
+          - code: "I10"
+            description: "Essential (primary) hypertension"
+            onset_date: "2016-07-22"
+          - code: "E78.5"
+            description: "Hyperlipidemia, unspecified"
+            onset_date: "2017-01-15"
+          - code: "K21.0"
+            description: "Gastro-esophageal reflux disease with esophagitis"
+            onset_date: "2019-09-01"
+          - code: "E66.01"
+            description: "Morbid (severe) obesity due to excess calories"
+            onset_date: "2018-04-20"
+        medications:
+          - drug_name: "Metformin"
+            dose: "1000 mg"
+            frequency: "twice daily"
+          - drug_name: "Lisinopril"
+            dose: "20 mg"
+            frequency: "once daily"
+          - drug_name: "Atorvastatin"
+            dose: "40 mg"
+            frequency: "once daily at bedtime"
+          - drug_name: "Omeprazole"
+            dose: "20 mg"
+            frequency: "once daily before breakfast"
+          - drug_name: "Aspirin"
+            dose: "81 mg"
+            frequency: "once daily"
+        allergies:
+          - substance: "Penicillin"
+            reaction: "Anaphylaxis"
+            severity: "severe"
+          - substance: "Sulfonamides"
+            reaction: "Rash"
+            severity: "moderate"
+        vitals:
+          temp: "98.6"
+          bp: "142/88"
+          hr: "82"
+          rr: "18"
+          spo2: "97"
+          weight: "265"
+          height: "71"
+        existing_notes:
+          - type: "SOAP"
+            date: "2026-02-24 16:00:00"
+            summary: >-
+              SUBJECTIVE: Patient reports increasing thirst and frequent urination.
+              Compliant with medications. Denies chest pain or vision changes.;
+              OBJECTIVE: BP 142/88, HR 82, Weight 265 lbs. BMI 36.9.;
+              ASSESSMENT: Uncontrolled type 2 diabetes. Hypertension not at goal.;
+              PLAN: Increase Metformin to 1000mg BID. Consider adding GLP-1 agonist.
+              Recheck A1C in 3 months. Dietary counseling referral.
+
+      billing_status:
+        has_dx_codes: true
+        has_cpt_codes: true
+        dx_codes: ["E11.65", "I10", "E78.5"]
+        cpt_codes: ["99214"]
+        billing_note: ""
+        last_level_billed: "4"
+        last_level_closed: "0"
+
+      data_warnings: []

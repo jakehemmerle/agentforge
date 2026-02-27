@@ -3,16 +3,25 @@
 Each evaluator follows the LangSmith signature: (run, example) -> dict
 with keys ``key`` (str) and ``score`` (float 0.0–1.0).
 
-Extracted and improved from ``run_evals.py``, plus two new evaluators:
+Extracted and improved from ``run_evals.py``, plus five new evaluators:
 - ``no_unwanted_tool_calls``: penalises tool usage when none was expected
 - ``response_well_formed``: catches raw JSON / tracebacks in user-facing text
+- ``no_prohibited_content``: fails if prohibited keywords appear in response
+- ``verification_decision_correct``: checks verify node produced expected decision
+- ``tool_call_precision``: penalises calling extra/unexpected tools
 
 Expected data layout in ``example.outputs`` (matches ``eval_cases.yaml``):
 
 .. code-block:: python
 
     {
-        "expected": {"tools": [...], "keywords": [...]},
+        "expected": {
+            "tools": [...],
+            "keywords": [...],
+            "prohibited_keywords": [...],       # optional
+            "verification_decision": "pass",    # optional: pass | warn | fail
+            "hallucination_markers": [...],     # optional, overrides global list
+        },
         "no_hallucination": True,   # optional
     }
 
@@ -59,6 +68,30 @@ def _get_expected_keywords(example: _HasOutputsAndMetadata) -> list[str]:
     if isinstance(expected, dict) and "keywords" in expected:
         return expected["keywords"]
     return example.outputs.get("expected_keywords", [])
+
+
+def _get_prohibited_keywords(example: _HasOutputsAndMetadata) -> list[str]:
+    """Return prohibited keywords from example outputs (must NOT appear in response)."""
+    expected = example.outputs.get("expected", {})
+    if isinstance(expected, dict):
+        return expected.get("prohibited_keywords", [])
+    return []
+
+
+def _get_verification_decision(example: _HasOutputsAndMetadata) -> str | None:
+    """Return expected verification decision (pass/warn/fail) or None if not set."""
+    expected = example.outputs.get("expected", {})
+    if isinstance(expected, dict):
+        return expected.get("verification_decision")
+    return None
+
+
+def _get_hallucination_markers(example: _HasOutputsAndMetadata) -> list[str]:
+    """Return per-case hallucination markers, or empty list if not set."""
+    expected = example.outputs.get("expected", {})
+    if isinstance(expected, dict):
+        return expected.get("hallucination_markers", [])
+    return []
 
 
 # Hallucination markers — specific details the model shouldn't fabricate.
@@ -146,6 +179,9 @@ def no_hallucinated_data(run: _HasOutputs, example: _HasOutputsAndMetadata) -> d
     Checks against a list of hallucination markers (specific times, visit
     types, scheduling phrases).  Non-applicable cases score 1.0.
 
+    Uses per-case ``hallucination_markers`` when present; otherwise falls back
+    to the global ``_HALLUCINATION_MARKERS`` list.
+
     Applicability is determined by the ``no_hallucination`` flag in
     ``example.outputs`` (set in ``eval_cases.yaml``).
     """
@@ -153,7 +189,8 @@ def no_hallucinated_data(run: _HasOutputs, example: _HasOutputsAndMetadata) -> d
         return {"key": "no_hallucinated_data", "score": 1.0}
 
     response: str = (run.outputs.get("response", "") or "").lower()
-    found = [m for m in _HALLUCINATION_MARKERS if m in response]
+    markers = _get_hallucination_markers(example) or _HALLUCINATION_MARKERS
+    found = [m for m in markers if m.lower() in response]
     score = 0.0 if found else 1.0
     return {"key": "no_hallucinated_data", "score": score}
 
@@ -206,6 +243,75 @@ def response_well_formed(run: _HasOutputs, example: _HasOutputsAndMetadata) -> d
 
 
 # ---------------------------------------------------------------------------
+# Evaluator 7 — no_prohibited_content  (NEW)
+# ---------------------------------------------------------------------------
+
+
+def no_prohibited_content(run: _HasOutputs, example: _HasOutputsAndMetadata) -> dict:
+    """Verify the response does NOT contain any prohibited keywords.
+
+    Score is 0.0 if ANY prohibited keyword appears (case-insensitive).
+    Returns 1.0 when the field is absent (not applicable).
+    """
+    prohibited = _get_prohibited_keywords(example)
+    if not prohibited:
+        return {"key": "no_prohibited_content", "score": 1.0}
+
+    response: str = (run.outputs.get("response", "") or "").lower()
+    for kw in prohibited:
+        if str(kw).lower() in response:
+            return {"key": "no_prohibited_content", "score": 0.0}
+    return {"key": "no_prohibited_content", "score": 1.0}
+
+
+# ---------------------------------------------------------------------------
+# Evaluator 8 — verification_decision_correct  (NEW)
+# ---------------------------------------------------------------------------
+
+
+def verification_decision_correct(
+    run: _HasOutputs, example: _HasOutputsAndMetadata
+) -> dict:
+    """Verify the verification node produced the expected decision.
+
+    Compares ``run.outputs["verification"]["decision"]`` against
+    ``expected.verification_decision``.  Returns 1.0 when the field is
+    absent (not applicable).
+    """
+    expected_decision = _get_verification_decision(example)
+    if expected_decision is None:
+        return {"key": "verification_decision_correct", "score": 1.0}
+
+    verification = run.outputs.get("verification")
+    if not verification or not isinstance(verification, dict):
+        return {"key": "verification_decision_correct", "score": 0.0}
+
+    actual = verification.get("decision")
+    score = 1.0 if actual == expected_decision else 0.0
+    return {"key": "verification_decision_correct", "score": score}
+
+
+# ---------------------------------------------------------------------------
+# Evaluator 9 — tool_call_precision  (NEW)
+# ---------------------------------------------------------------------------
+
+
+def tool_call_precision(run: _HasOutputs, example: _HasOutputsAndMetadata) -> dict:
+    """Precision of tool calls: |expected ∩ actual| / |actual|.
+
+    Penalises calling extra (unexpected) tools.  Returns 1.0 when expected
+    is empty (defers to ``no_unwanted_tool_calls``) or when actual is empty
+    (defers to ``expected_tools_called``).
+    """
+    expected: set[str] = set(_get_expected_tools(example))
+    actual: set[str] = set(run.outputs.get("tool_calls", []))
+    if not expected or not actual:
+        return {"key": "tool_call_precision", "score": 1.0}
+    score = len(expected & actual) / len(actual)
+    return {"key": "tool_call_precision", "score": score}
+
+
+# ---------------------------------------------------------------------------
 # Public list for easy import into the runner
 # ---------------------------------------------------------------------------
 
@@ -216,4 +322,7 @@ ALL_EVALUATORS = [
     no_hallucinated_data,
     no_unwanted_tool_calls,
     response_well_formed,
+    no_prohibited_content,
+    verification_decision_correct,
+    tool_call_precision,
 ]

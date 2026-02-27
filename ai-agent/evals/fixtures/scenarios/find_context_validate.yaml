@@ -1,12 +1,28 @@
-# Scenario: Get full clinical context for a known patient encounter.
+# Scenario: Find, get context, then validate claim.
 
-name: get_encounter_context
+name: find_context_validate
 description: >
-  Retrieve full clinical context for John Doe's encounter 900001.
-  Returns encounter details, patient demographics, active problems,
-  medications, allergies, vitals, SOAP notes, and billing status.
+  Multi-step: find patient 90001's appointments, get clinical context
+  for encounter 900001, and validate the claim.
 
 tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1001
+          patient_name: "John Doe"
+          patient_id: 90001
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "14:00:00"
+          end_time: "14:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Follow-up visit for cough"
+      total_count: 1
+
   get_encounter_context:
     _default:
       encounter:
@@ -21,29 +37,21 @@ tools:
           id: 3
         class_code: "AMB"
         status: "Office Visit"
-
       patient:
         id: 90001
         name: "John Doe"
         dob: "1985-03-15"
         sex: "Male"
         mrn: "TEST001"
-
       clinical_context:
         active_problems:
           - code: "E11.9"
             description: "Type 2 diabetes mellitus without complications"
             onset_date: "2020-06-15"
-          - code: "I10"
-            description: "Essential (primary) hypertension"
-            onset_date: "2019-01-10"
         medications:
           - drug_name: "Metformin"
             dose: "500 mg"
             frequency: "twice daily"
-          - drug_name: "Lisinopril"
-            dose: "10 mg"
-            frequency: "once daily"
         allergies:
           - substance: "Penicillin"
             reaction: "Rash"
@@ -56,19 +64,7 @@ tools:
           spo2: "98"
           weight: "180"
           height: "70"
-        existing_notes:
-          - type: "SOAP"
-            date: "2026-02-23 10:00:00"
-            summary: >-
-              SUBJECTIVE: Patient reports persistent cough for 3 days with
-              low-grade fever. No shortness of breath. Mild sore throat.;
-              OBJECTIVE: Temp 99.8F, BP 128/82, HR 76, RR 16, SpO2 98%.
-              Oropharynx mildly erythematous. Lungs clear to auscultation
-              bilaterally.;
-              ASSESSMENT: Acute upper respiratory infection (J06.9);
-              PLAN: Rest and adequate fluids. OTC antipyretics for fever.
-              Follow up in 1 week if symptoms persist or worsen.
-
+        existing_notes: []
       billing_status:
         has_dx_codes: false
         has_cpt_codes: false
@@ -77,5 +73,18 @@ tools:
         billing_note: ""
         last_level_billed: "0"
         last_level_closed: "0"
+      data_warnings: []
 
+  validate_claim_ready_completeness:
+    _default:
+      ready: true
+      errors: []
+      warnings: []
+      summary:
+        patient_id: 90001
+        encounter_id: 900001
+        diagnosis_codes: ["E11.9"]
+        procedure_codes: ["99213"]
+        has_primary_insurance: true
+        claim_status: "ready"
       data_warnings: []

@@ -1,0 +1,36 @@
+# Scenario: Find appointments filtered by arrived status.
+
+name: find_appointments_by_status
+description: >
+  Search for patients who have arrived today. Returns 2 appointments
+  with status "@" (Arrived).
+
+tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1001
+          patient_name: "John Doe"
+          patient_id: 90001
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "14:00:00"
+          end_time: "14:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Follow-up visit for cough"
+        - appointment_id: 1007
+          patient_name: "Maria Garcia"
+          patient_id: 90004
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "13:00:00"
+          end_time: "13:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Headache and fatigue"
+      total_count: 2

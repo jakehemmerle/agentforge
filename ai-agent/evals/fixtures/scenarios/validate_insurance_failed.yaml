@@ -1,0 +1,24 @@
+# Scenario: Validate claim with insurance fetch failure.
+
+name: validate_insurance_failed
+description: >
+  Validate claim where the insurance data fetch failed.
+  Tool returns not ready with data_warnings.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: false
+      errors:
+        - "Cannot verify insurance status"
+      warnings:
+        - "Insurance data may be incomplete"
+      summary:
+        patient_id: 90001
+        encounter_id: 900001
+        diagnosis_codes: ["E11.9"]
+        procedure_codes: ["99213"]
+        has_primary_insurance: false
+        claim_status: "not_ready"
+      data_warnings:
+        - "insurance_fetch_failed"

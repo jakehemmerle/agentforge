@@ -1,0 +1,21 @@
+# Scenario: Validate claim — ready with complex billing (5 DX + 2 CPT).
+
+name: validate_claim_complex
+description: >
+  Validate claim readiness for James Wilson's complex encounter.
+  Claim is ready with 5 diagnosis codes and 2 CPT codes.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: true
+      errors: []
+      warnings: []
+      summary:
+        patient_id: 90005
+        encounter_id: 900005
+        diagnosis_codes: ["E11.65", "I10", "E78.5", "K21.0", "E66.01"]
+        procedure_codes: ["99214", "99417"]
+        has_primary_insurance: true
+        claim_status: "ready"
+      data_warnings: []

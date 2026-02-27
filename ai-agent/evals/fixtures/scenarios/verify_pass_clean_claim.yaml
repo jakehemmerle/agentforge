@@ -1,0 +1,21 @@
+# Scenario: Verification pass — claim is ready with clean data.
+
+name: verify_pass_clean_claim
+description: >
+  Validate claim readiness for a clean encounter. Tool returns ready=true
+  with no warnings. Verification should pass.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: true
+      errors: []
+      warnings: []
+      summary:
+        patient_id: 90001
+        encounter_id: 900001
+        diagnosis_codes: ["E11.9"]
+        procedure_codes: ["99213"]
+        has_primary_insurance: true
+        claim_status: "ready"
+      data_warnings: []

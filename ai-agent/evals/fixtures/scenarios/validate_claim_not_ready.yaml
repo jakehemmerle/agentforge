@@ -1,0 +1,23 @@
+# Scenario: Validate claim — not ready, missing diagnosis code.
+
+name: validate_claim_not_ready
+description: >
+  Validate claim readiness for Jane Smith's encounter. Claim is not ready
+  due to missing ICD-10 code and no primary insurance.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: false
+      errors:
+        - "Missing ICD-10 diagnosis code"
+      warnings:
+        - "No primary insurance on file"
+      summary:
+        patient_id: 90002
+        encounter_id: 900002
+        diagnosis_codes: []
+        procedure_codes: ["99213"]
+        has_primary_insurance: false
+        claim_status: "not_ready"
+      data_warnings: []

@@ -1,0 +1,109 @@
+# Scenario: Full chain for James Wilson — find, context, draft.
+
+name: full_chain_james
+description: >
+  Multi-step: find James Wilson's appointments, get clinical context,
+  and draft a SOAP note for diabetes management.
+
+tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1008
+          patient_name: "James Wilson"
+          patient_id: 90005
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "16:00:00"
+          end_time: "16:15:00"
+          status: "-"
+          status_label: "Open"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Diabetes management follow-up"
+      total_count: 1
+
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900005
+        date: "2026-02-24 16:00:00"
+        reason: "Diabetes management follow-up"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Office Visit"
+      patient:
+        id: 90005
+        name: "James Wilson"
+        dob: "1965-08-30"
+        sex: "Male"
+        mrn: "TEST005"
+      clinical_context:
+        active_problems:
+          - code: "E11.65"
+            description: "Type 2 diabetes mellitus with hyperglycemia"
+            onset_date: "2015-03-10"
+          - code: "I10"
+            description: "Essential (primary) hypertension"
+            onset_date: "2016-07-22"
+          - code: "E78.5"
+            description: "Hyperlipidemia, unspecified"
+            onset_date: "2017-01-15"
+        medications:
+          - drug_name: "Metformin"
+            dose: "1000 mg"
+            frequency: "twice daily"
+          - drug_name: "Lisinopril"
+            dose: "20 mg"
+            frequency: "once daily"
+          - drug_name: "Atorvastatin"
+            dose: "40 mg"
+            frequency: "once daily at bedtime"
+        allergies:
+          - substance: "Penicillin"
+            reaction: "Anaphylaxis"
+            severity: "severe"
+        vitals:
+          temp: "98.6"
+          bp: "142/88"
+          hr: "82"
+          rr: "18"
+          spo2: "97"
+          weight: "265"
+          height: "71"
+        existing_notes: []
+      billing_status:
+        has_dx_codes: true
+        has_cpt_codes: true
+        dx_codes: ["E11.65", "I10"]
+        cpt_codes: ["99214"]
+        billing_note: ""
+        last_level_billed: "4"
+        last_level_closed: "0"
+      data_warnings: []
+
+  draft_encounter_note:
+    _default:
+      draft_note:
+        type: "SOAP"
+        content:
+          subjective: "Patient reports increasing thirst and frequent urination."
+          objective: "BP 142/88, HR 82, Weight 265 lbs. BMI 36.9."
+          assessment: "Uncontrolled T2DM with hyperglycemia. HTN not at goal."
+          plan: "Increase Metformin. Consider GLP-1 agonist. Recheck A1C 3 months."
+        full_text: >-
+          S: Increasing thirst, frequent urination. Compliant with meds.
+          O: BP 142/88, HR 82, Wt 265. BMI 36.9.
+          A: Uncontrolled T2DM. HTN not at goal.
+          P: Increase Metformin, consider GLP-1, recheck A1C.
+        encounter_id: 900005
+        patient_name: "James Wilson"
+        generated_at: "2026-02-24T17:00:00+00:00"
+      warnings: []
+      data_warnings: []
+      disclaimer: "This is an AI-generated draft. Review and edit before saving."

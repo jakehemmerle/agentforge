@@ -1,12 +1,28 @@
-# Scenario: Get full clinical context for a known patient encounter.
+# Scenario: Get patient clinical context for a known patient.
 
-name: get_encounter_context
+name: get_patient_summary
 description: >
-  Retrieve full clinical context for John Doe's encounter 900001.
-  Returns encounter details, patient demographics, active problems,
-  medications, allergies, vitals, SOAP notes, and billing status.
+  Retrieve clinical context for John Doe (90001) including demographics,
+  active problems, medications, and allergies via get_encounter_context.
 
 tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1001
+          patient_name: "John Doe"
+          patient_id: 90001
+          provider_name: "Administrator Administrator"
+          date: "2026-02-23"
+          start_time: "14:00:00"
+          end_time: "14:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Follow-up visit for cough"
+      total_count: 1
+
   get_encounter_context:
     _default:
       encounter:
@@ -21,14 +37,12 @@ tools:
           id: 3
         class_code: "AMB"
         status: "Office Visit"
-
       patient:
         id: 90001
         name: "John Doe"
         dob: "1985-03-15"
         sex: "Male"
         mrn: "TEST001"
-
       clinical_context:
         active_problems:
           - code: "E11.9"
@@ -56,19 +70,7 @@ tools:
           spo2: "98"
           weight: "180"
           height: "70"
-        existing_notes:
-          - type: "SOAP"
-            date: "2026-02-23 10:00:00"
-            summary: >-
-              SUBJECTIVE: Patient reports persistent cough for 3 days with
-              low-grade fever. No shortness of breath. Mild sore throat.;
-              OBJECTIVE: Temp 99.8F, BP 128/82, HR 76, RR 16, SpO2 98%.
-              Oropharynx mildly erythematous. Lungs clear to auscultation
-              bilaterally.;
-              ASSESSMENT: Acute upper respiratory infection (J06.9);
-              PLAN: Rest and adequate fluids. OTC antipyretics for fever.
-              Follow up in 1 week if symptoms persist or worsen.
-
+        existing_notes: []
       billing_status:
         has_dx_codes: false
         has_cpt_codes: false
@@ -77,5 +79,4 @@ tools:
         billing_note: ""
         last_level_billed: "0"
         last_level_closed: "0"
-
       data_warnings: []

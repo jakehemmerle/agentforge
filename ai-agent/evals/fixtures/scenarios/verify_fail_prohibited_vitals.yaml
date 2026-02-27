@@ -1,0 +1,66 @@
+# Scenario: Verification fail — vitals present but vitals_fetch_failed.
+
+name: verify_fail_prohibited_vitals
+description: >
+  Get encounter context where vitals are populated BUT data_warnings
+  includes vitals_fetch_failed. This is contradictory data — the vitals
+  may be stale/cached. Verification should fail if the agent presents
+  vitals without noting the contradiction.
+
+tools:
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900001
+        date: "2026-02-24 14:00:00"
+        reason: "Follow-up visit for cough"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Office Visit"
+
+      patient:
+        id: 90001
+        name: "John Doe"
+        dob: "1985-03-15"
+        sex: "Male"
+        mrn: "TEST001"
+
+      clinical_context:
+        active_problems:
+          - code: "E11.9"
+            description: "Type 2 diabetes mellitus without complications"
+            onset_date: "2020-06-15"
+        medications:
+          - drug_name: "Metformin"
+            dose: "500 mg"
+            frequency: "twice daily"
+        allergies:
+          - substance: "Penicillin"
+            reaction: "Rash"
+            severity: "moderate"
+        vitals:
+          temp: "99.8"
+          bp: "128/82"
+          hr: "76"
+          rr: "16"
+          spo2: "98"
+          weight: "180"
+          height: "70"
+        existing_notes: []
+
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+
+      data_warnings:
+        - "vitals_fetch_failed"

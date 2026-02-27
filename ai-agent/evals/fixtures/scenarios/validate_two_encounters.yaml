@@ -1,0 +1,21 @@
+# Scenario: Validate claims for two different encounters.
+
+name: validate_two_encounters
+description: >
+  Multi-step: validate claim readiness for two different encounters.
+  The mock returns the same fixture data for both calls.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: true
+      errors: []
+      warnings: []
+      summary:
+        patient_id: 90001
+        encounter_id: 900001
+        diagnosis_codes: ["E11.9"]
+        procedure_codes: ["99213"]
+        has_primary_insurance: true
+        claim_status: "ready"
+      data_warnings: []

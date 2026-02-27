@@ -1,0 +1,27 @@
+# Scenario: Verification fail — claim not ready and billing data unreliable.
+
+name: verify_fail_false_claim_ready
+description: >
+  Validate claim where the tool returns ready=false with errors AND
+  data_warnings: ["billing_fetch_failed"]. The billing data itself is
+  unreliable, so verification should fail since any claim assessment
+  is built on incomplete data.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: false
+      errors:
+        - "Missing ICD-10 diagnosis code"
+        - "No primary insurance on file"
+      warnings:
+        - "Billing data may be incomplete"
+      summary:
+        patient_id: 90002
+        encounter_id: 900002
+        diagnosis_codes: []
+        procedure_codes: []
+        has_primary_insurance: false
+        claim_status: "not_ready"
+      data_warnings:
+        - "billing_fetch_failed"

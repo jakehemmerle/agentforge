@@ -1,0 +1,24 @@
+# Scenario: Verification pass — claim not ready, agent correctly reports issues.
+
+name: verify_pass_claim_not_ready
+description: >
+  Validate claim that is NOT ready. Tool returns ready=false with errors.
+  Agent should correctly report the issues. Verification passes because
+  the response faithfully reflects tool output.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: false
+      errors:
+        - "Missing ICD-10 diagnosis code"
+      warnings:
+        - "No primary insurance on file"
+      summary:
+        patient_id: 90002
+        encounter_id: 900002
+        diagnosis_codes: []
+        procedure_codes: ["99213"]
+        has_primary_insurance: false
+        claim_status: "not_ready"
+      data_warnings: []

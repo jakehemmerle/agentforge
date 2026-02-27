@@ -1,0 +1,13 @@
+# Scenario: Find appointments on a date with no results.
+
+name: find_empty_date
+description: >
+  Search for appointments on a past date with no results.
+  Agent should report no appointments without fabricating details.
+
+tools:
+  find_appointments:
+    _default:
+      appointments: []
+      total_count: 0
+      message: "No appointments found for 2025-01-01."

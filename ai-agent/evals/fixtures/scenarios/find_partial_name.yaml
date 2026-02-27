@@ -1,0 +1,36 @@
+# Scenario: Find appointments with a partial name match.
+
+name: find_partial_name
+description: >
+  Search for appointments using partial name "Doe". Returns John Doe's
+  appointments.
+
+tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1001
+          patient_name: "John Doe"
+          patient_id: 90001
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "14:00:00"
+          end_time: "14:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Follow-up visit for cough"
+        - appointment_id: 1002
+          patient_name: "John Doe"
+          patient_id: 90001
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "15:30:00"
+          end_time: "15:45:00"
+          status: "-"
+          status_label: "Open"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Routine check-up"
+      total_count: 2

@@ -1,0 +1,12 @@
+# Scenario: Draft note for a nonexistent patient/encounter.
+
+name: draft_note_nonexistent
+description: >
+  Attempt to draft a SOAP note for a patient/encounter that does not exist.
+  get_encounter_context raises an error.
+
+tools:
+  get_encounter_context:
+    _error: "No patient found with ID 999999"
+  draft_encounter_note:
+    _error: "No encounter found with ID 999999"

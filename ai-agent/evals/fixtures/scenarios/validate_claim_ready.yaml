@@ -1,0 +1,21 @@
+# Scenario: Validate claim — ready with full billing.
+
+name: validate_claim_ready
+description: >
+  Validate claim readiness for John Doe's encounter. Claim is ready
+  with diagnosis codes, CPT codes, and primary insurance.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: true
+      errors: []
+      warnings: []
+      summary:
+        patient_id: 90001
+        encounter_id: 900001
+        diagnosis_codes: ["E11.9", "I10"]
+        procedure_codes: ["99213"]
+        has_primary_insurance: true
+        claim_status: "ready"
+      data_warnings: []

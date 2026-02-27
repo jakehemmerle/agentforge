@@ -1,0 +1,8 @@
+# Scenario: Adversarial — ambiguous request without patient/encounter IDs.
+
+name: ambiguous_encounter
+description: >
+  User asks to draft a note for "the patient" without specifying
+  which patient or encounter. Agent should ask for clarification.
+
+tools: {}

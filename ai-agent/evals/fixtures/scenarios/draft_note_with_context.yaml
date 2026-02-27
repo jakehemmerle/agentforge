@@ -1,0 +1,94 @@
+# Scenario: Draft a SOAP note with additional context (PHQ-9 score).
+
+name: draft_note_with_context
+description: >
+  Draft a SOAP note for Maria Garcia's encounter with additional context
+  about PHQ-9 score of 14 (moderate depression).
+
+tools:
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900004
+        date: "2026-02-24 13:00:00"
+        reason: "Headache and fatigue"
+        provider:
+          name: "Administrator Administrator"
+          id: 1
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Office Visit"
+      patient:
+        id: 90004
+        name: "Maria Garcia"
+        dob: "1992-04-18"
+        sex: "Female"
+        mrn: "TEST004"
+      clinical_context:
+        active_problems:
+          - code: "R51.9"
+            description: "Headache, unspecified"
+            onset_date: "2026-02-10"
+          - code: "R53.83"
+            description: "Other fatigue"
+            onset_date: "2026-01-15"
+        medications:
+          - drug_name: "Acetaminophen"
+            dose: "500 mg"
+            frequency: "as needed"
+        allergies: []
+        vitals:
+          temp: "98.2"
+          bp: "118/74"
+          hr: "68"
+          rr: "14"
+          spo2: "99"
+          weight: "140"
+          height: "64"
+        existing_notes: []
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+      data_warnings: []
+
+  draft_encounter_note:
+    _default:
+      draft_note:
+        type: "SOAP"
+        content:
+          subjective: >-
+            Patient reports persistent headaches and fatigue for several weeks.
+            PHQ-9 score of 14 indicates moderate depression. Denies suicidal
+            ideation. Sleep has been poor.
+          objective: >-
+            Temp 98.2F, BP 118/74, HR 68, RR 14, SpO2 99%. Alert, oriented.
+            Affect flat. No focal neurological deficits.
+          assessment: >-
+            Moderate depressive episode (PHQ-9: 14). Tension-type headache,
+            likely related to mood disorder. Fatigue secondary to depression.
+          plan: >-
+            Start SSRI (sertraline 50mg daily). Refer to behavioral health.
+            Follow up in 4 weeks with repeat PHQ-9. Return precautions for
+            worsening symptoms.
+        full_text: >-
+          S: Patient reports persistent headaches and fatigue for several weeks.
+          PHQ-9 score of 14 indicates moderate depression.
+
+          O: Temp 98.2F, BP 118/74, HR 68, RR 14, SpO2 99%. Affect flat.
+
+          A: Moderate depressive episode (PHQ-9: 14). Tension-type headache.
+
+          P: Start SSRI. Refer to behavioral health. Follow up in 4 weeks.
+        encounter_id: 900004
+        patient_name: "Maria Garcia"
+        generated_at: "2026-02-24T14:00:00+00:00"
+      warnings: []
+      data_warnings: []
+      disclaimer: "This is an AI-generated draft. Review and edit before saving."

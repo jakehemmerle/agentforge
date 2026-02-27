@@ -1,0 +1,10 @@
+# Scenario: Validate claim for wrong encounter ID.
+
+name: validate_wrong_encounter
+description: >
+  Validate claim for a valid patient but nonexistent encounter.
+  Tool raises an error.
+
+tools:
+  validate_claim_ready_completeness:
+    _error: "No encounter found with ID 999999 for patient 90001"

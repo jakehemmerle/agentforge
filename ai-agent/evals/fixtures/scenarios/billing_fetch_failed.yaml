@@ -1,0 +1,24 @@
+# Scenario: Validate claim with billing fetch failure.
+
+name: billing_fetch_failed
+description: >
+  Validate claim where the billing data fetch failed. Tool returns
+  partial results with data_warnings indicating the failure.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: false
+      errors:
+        - "Unable to verify billing data"
+      warnings:
+        - "Billing information may be incomplete"
+      summary:
+        patient_id: 90001
+        encounter_id: 900001
+        diagnosis_codes: []
+        procedure_codes: []
+        has_primary_insurance: false
+        claim_status: "error"
+      data_warnings:
+        - "billing_fetch_failed"

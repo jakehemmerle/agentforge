@@ -1,0 +1,153 @@
+  # ── Happy-path: find_appointments variants ──────────────────────────────
+
+  - name: find_appointments_by_pid
+    category: happy_path
+    query: "Show appointments for patient ID 90001"
+    scenario: find_appointments_by_pid
+    expected:
+      tools: [find_appointments]
+      keywords: [John, Doe, appointment]
+    tags: [happy_path, single_tool, appointments]
+
+  - name: find_appointments_by_status
+    category: happy_path
+    query: "Which patients have arrived today?"
+    scenario: find_appointments_by_status
+    expected:
+      tools: [find_appointments]
+      keywords: [arrived, John Doe, Maria Garcia]
+    tags: [happy_path, single_tool, appointments]
+
+  - name: find_appointments_by_date
+    category: happy_path
+    query: "What appointments are on 2026-02-25?"
+    scenario: find_appointments_by_date
+    expected:
+      tools: [find_appointments]
+      keywords: [Jane, Smith, "2026-02-25"]
+    tags: [happy_path, single_tool, appointments]
+
+  - name: find_all_appointments
+    category: happy_path
+    query: "List all appointments in the system"
+    scenario: find_all_appointments
+    expected:
+      tools: [find_appointments]
+      keywords: [appointment]
+    tags: [happy_path, single_tool, appointments]
+
+  # ── Happy-path: get_encounter_context variants ─────────────────────────
+
+  - name: get_context_sparse
+    category: happy_path
+    query: "Get clinical context for patient 90002, encounter 900002"
+    scenario: get_context_sparse
+    expected:
+      tools: [get_encounter_context]
+      keywords: [Jane, Smith, encounter]
+    tags: [happy_path, single_tool, clinical]
+
+  - name: get_context_complex
+    category: happy_path
+    query: "Get clinical context for patient 90005, encounter 900005"
+    scenario: get_context_complex
+    expected:
+      tools: [get_encounter_context]
+      keywords: [James, Wilson, diabetes, hypertension]
+    tags: [happy_path, single_tool, clinical]
+
+  - name: get_context_nkda
+    category: happy_path
+    query: "Get clinical context for patient 90003, encounter 900003"
+    scenario: get_context_nkda
+    expected:
+      tools: [get_encounter_context]
+      keywords: [Robert, Johnson, no known]
+    tags: [happy_path, single_tool, clinical]
+
+  # ── Happy-path: validate_claim variants ────────────────────────────────
+
+  - name: validate_claim_ready
+    category: happy_path
+    query: "Is the claim ready for patient 90001, encounter 900001?"
+    scenario: validate_claim_ready
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [ready, claim]
+    tags: [happy_path, single_tool, billing]
+
+  - name: validate_claim_not_ready
+    category: happy_path
+    query: "Validate claim for patient 90002, encounter 900002"
+    scenario: validate_claim_not_ready
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [not ready, missing]
+    tags: [happy_path, single_tool, billing]
+
+  - name: validate_claim_complex
+    category: happy_path
+    query: "Check claim readiness for patient 90005, encounter 900005"
+    scenario: validate_claim_complex
+    expected:
+      tools: [validate_claim_ready_completeness]
+      keywords: [ready, claim]
+    tags: [happy_path, single_tool, billing]
+
+  # ── Happy-path: draft_encounter_note variants ──────────────────────────
+
+  - name: draft_progress_note
+    category: happy_path
+    query: "Write a progress note for patient 90001, encounter 900001"
+    scenario: draft_progress_note
+    expected:
+      tools: [draft_encounter_note]
+      keywords: [progress, note, patient]
+    tags: [happy_path, single_tool, notes]
+
+  - name: draft_note_with_context
+    category: happy_path
+    query: "Draft a SOAP note for patient 90004, encounter 900004. The PHQ-9 score is 14."
+    scenario: draft_note_with_context
+    expected:
+      tools: [get_encounter_context, draft_encounter_note]
+      keywords: [SOAP, PHQ-9, depression]
+    tags: [happy_path, multi_tool, clinical, notes]
+
+  - name: draft_note_complex
+    category: happy_path
+    query: "Draft a note for patient 90005, encounter 900005"
+    scenario: draft_note_complex
+    expected:
+      tools: [get_encounter_context, draft_encounter_note]
+      keywords: [Subjective, Objective, Assessment, Plan]
+    tags: [happy_path, multi_tool, clinical, notes]
+
+  # ── Happy-path: multi-tool combinations ────────────────────────────────
+
+  - name: appointments_then_context
+    category: happy_path
+    query: "Find Maria Garcia's appointment today and get her clinical data"
+    scenario: appointments_then_context
+    expected:
+      tools: [find_appointments, get_encounter_context]
+      keywords: [Maria, Garcia]
+    tags: [happy_path, multi_tool, appointments, clinical]
+
+  - name: appointments_then_validate
+    category: happy_path
+    query: "Find John Doe's appointments and validate the claim for encounter 900001"
+    scenario: appointments_then_validate
+    expected:
+      tools: [find_appointments, validate_claim_ready_completeness]
+      keywords: [John, Doe, claim]
+    tags: [happy_path, multi_tool, appointments, billing]
+
+  - name: context_then_validate
+    category: happy_path
+    query: "Get context for patient 90001, encounter 900001 and check claim readiness"
+    scenario: context_then_validate
+    expected:
+      tools: [get_encounter_context, validate_claim_ready_completeness]
+      keywords: [claim, ready]
+    tags: [happy_path, multi_tool, clinical, billing]

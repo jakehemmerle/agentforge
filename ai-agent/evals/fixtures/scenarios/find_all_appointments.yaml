@@ -1,0 +1,84 @@
+# Scenario: List all appointments in the system.
+
+name: find_all_appointments
+description: >
+  List all appointments across all patients. Returns 6 appointments
+  for various patients.
+
+tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1001
+          patient_name: "John Doe"
+          patient_id: 90001
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "14:00:00"
+          end_time: "14:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Follow-up visit for cough"
+        - appointment_id: 1004
+          patient_name: "Jane Smith"
+          patient_id: 90002
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "10:00:00"
+          end_time: "10:15:00"
+          status: ">"
+          status_label: "Checked out"
+          category: "Established Patient"
+          facility: "Your Clinic Name Here"
+          reason: "Annual wellness exam"
+        - appointment_id: 1006
+          patient_name: "Robert Johnson"
+          patient_id: 90003
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "11:00:00"
+          end_time: "11:15:00"
+          status: "x"
+          status_label: "No show"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Back pain evaluation"
+        - appointment_id: 1007
+          patient_name: "Maria Garcia"
+          patient_id: 90004
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "13:00:00"
+          end_time: "13:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Headache and fatigue"
+        - appointment_id: 1008
+          patient_name: "James Wilson"
+          patient_id: 90005
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "16:00:00"
+          end_time: "16:15:00"
+          status: "-"
+          status_label: "Open"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Diabetes management follow-up"
+        - appointment_id: 1009
+          patient_name: "Sarah Chen"
+          patient_id: 90006
+          provider_name: "Administrator Administrator"
+          date: "2026-02-24"
+          start_time: "15:00:00"
+          end_time: "15:15:00"
+          status: "-"
+          status_label: "Open"
+          category: "New Patient"
+          facility: "Your Clinic Name Here"
+          reason: "Initial consultation - anxiety"
+      total_count: 6

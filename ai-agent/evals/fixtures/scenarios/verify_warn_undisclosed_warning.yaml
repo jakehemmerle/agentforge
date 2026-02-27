@@ -1,0 +1,55 @@
+# Scenario: Verification warn — data_warnings not disclosed by agent.
+
+name: verify_warn_undisclosed_warning
+description: >
+  Get encounter context where vitals fetch failed. The tool returns
+  data_warnings: ["vitals_fetch_failed"] with empty vitals. Verification
+  should warn if the agent does not disclose the data limitation.
+
+tools:
+  get_encounter_context:
+    _default:
+      encounter:
+        id: 900003
+        date: "2026-02-24 11:00:00"
+        reason: "Back pain evaluation"
+        provider:
+          name: "Dr. Smith"
+          id: 2
+        facility:
+          name: "Your Clinic Name Here"
+          id: 3
+        class_code: "AMB"
+        status: "Office Visit"
+
+      patient:
+        id: 90003
+        name: "Robert Johnson"
+        dob: "1978-11-03"
+        sex: "Male"
+        mrn: "TEST003"
+
+      clinical_context:
+        active_problems:
+          - code: "M54.5"
+            description: "Low back pain"
+            onset_date: "2025-09-01"
+        medications:
+          - drug_name: "Ibuprofen"
+            dose: "400 mg"
+            frequency: "three times daily as needed"
+        allergies: []
+        vitals: {}
+        existing_notes: []
+
+      billing_status:
+        has_dx_codes: false
+        has_cpt_codes: false
+        dx_codes: []
+        cpt_codes: []
+        billing_note: ""
+        last_level_billed: "0"
+        last_level_closed: "0"
+
+      data_warnings:
+        - "vitals_fetch_failed"

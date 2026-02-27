@@ -1,0 +1,13 @@
+# Scenario: Find cancelled appointments (none exist).
+
+name: find_cancelled
+description: >
+  Search for cancelled appointments for a patient. No cancelled
+  appointments exist for this patient.
+
+tools:
+  find_appointments:
+    _default:
+      appointments: []
+      total_count: 0
+      message: "No cancelled appointments found for Maria Garcia."

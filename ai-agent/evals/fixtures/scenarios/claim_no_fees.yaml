@@ -1,0 +1,22 @@
+# Scenario: Validate claim with CPT codes but zero fees.
+
+name: claim_no_fees
+description: >
+  Validate claim that is technically ready but CPT codes have
+  zero fees attached.
+
+tools:
+  validate_claim_ready_completeness:
+    _default:
+      ready: true
+      errors: []
+      warnings:
+        - "CPT code 99213 has fee amount of $0.00"
+      summary:
+        patient_id: 90001
+        encounter_id: 900001
+        diagnosis_codes: ["E11.9"]
+        procedure_codes: ["99213"]
+        has_primary_insurance: true
+        claim_status: "ready"
+      data_warnings: []

@@ -1,0 +1,36 @@
+# Scenario: Find appointments filtered by provider name.
+
+name: find_by_provider
+description: >
+  Search for appointments for Dr. Smith's patients. Returns 2 appointments
+  with that provider.
+
+tools:
+  find_appointments:
+    _default:
+      appointments:
+        - appointment_id: 1020
+          patient_name: "Robert Johnson"
+          patient_id: 90003
+          provider_name: "Dr. Smith"
+          date: "2026-02-24"
+          start_time: "09:00:00"
+          end_time: "09:15:00"
+          status: "@"
+          status_label: "Arrived"
+          category: "Office Visit"
+          facility: "Your Clinic Name Here"
+          reason: "Back pain follow-up"
+        - appointment_id: 1021
+          patient_name: "Sarah Chen"
+          patient_id: 90006
+          provider_name: "Dr. Smith"
+          date: "2026-02-24"
+          start_time: "10:30:00"
+          end_time: "10:45:00"
+          status: "-"
+          status_label: "Open"
+          category: "New Patient"
+          facility: "Your Clinic Name Here"
+          reason: "Initial consultation - anxiety"
+      total_count: 2

@@ -13,7 +13,7 @@ tools:
         date: "2026-02-23 10:00:00"
         reason: "Persistent cough for 3 days with low-grade fever"
         provider:
-          name: ""
+          name: "Administrator Administrator"
           id: 1
         facility:
           name: "Your Clinic Name Here"

@@ -152,6 +152,113 @@ describe('AiChatWidget', function () {
     });
 });
 
+describe('_renderPatientSummary', function () {
+    var w;
+
+    beforeEach(function () {
+        document.body.innerHTML = '';
+        var store = {};
+        jest.spyOn(Storage.prototype, 'getItem').mockImplementation(function (key) {
+            return store[key] || null;
+        });
+        jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, val) {
+            store[key] = val;
+        });
+        w = new AiChatWidget();
+    });
+
+    afterEach(function () {
+        jest.restoreAllMocks();
+    });
+
+    test('renders patient name and demographics', function () {
+        var html = w._renderPatientSummary({
+            patient: { name: 'John Doe', dob: '1985-03-15', sex: 'Male', mrn: 'TEST001' },
+            active_problems: [],
+            medications: [],
+            allergies: [],
+            data_warnings: []
+        });
+        expect(html).toContain('John Doe');
+        expect(html).toContain('1985-03-15');
+        expect(html).toContain('Male');
+        expect(html).toContain('TEST001');
+    });
+
+    test('renders active problems list', function () {
+        var html = w._renderPatientSummary({
+            patient: { name: 'Jane' },
+            active_problems: [
+                { description: 'Type 2 diabetes', code: 'E11.9' },
+                { description: 'Hypertension', code: 'I10' }
+            ],
+            medications: [],
+            allergies: [],
+            data_warnings: []
+        });
+        expect(html).toContain('Active Problems');
+        expect(html).toContain('Type 2 diabetes');
+        expect(html).toContain('E11.9');
+        expect(html).toContain('Hypertension');
+    });
+
+    test('renders medications list', function () {
+        var html = w._renderPatientSummary({
+            patient: { name: 'Jane' },
+            active_problems: [],
+            medications: [
+                { drug_name: 'Metformin', dose: '500 mg', frequency: 'twice daily' }
+            ],
+            allergies: [],
+            data_warnings: []
+        });
+        expect(html).toContain('Medications');
+        expect(html).toContain('Metformin');
+        expect(html).toContain('500 mg');
+        expect(html).toContain('twice daily');
+    });
+
+    test('renders allergies list', function () {
+        var html = w._renderPatientSummary({
+            patient: { name: 'Jane' },
+            active_problems: [],
+            medications: [],
+            allergies: [
+                { substance: 'Penicillin', reaction: 'Rash' }
+            ],
+            data_warnings: []
+        });
+        expect(html).toContain('Allergies');
+        expect(html).toContain('Penicillin');
+        expect(html).toContain('Rash');
+    });
+
+    test('renders data warnings', function () {
+        var html = w._renderPatientSummary({
+            patient: { name: 'Jane' },
+            active_problems: [],
+            medications: [],
+            allergies: [],
+            data_warnings: ['medications_fetch_failed: HTTP 500']
+        });
+        expect(html).toContain('medications_fetch_failed');
+    });
+
+    test('handles empty data gracefully', function () {
+        var html = w._renderPatientSummary({
+            patient: { name: 'Jane' },
+            active_problems: [],
+            medications: [],
+            allergies: [],
+            data_warnings: []
+        });
+        expect(html).toContain('Jane');
+        expect(html).not.toContain('Active Problems');
+        expect(html).not.toContain('Medications');
+        expect(html).not.toContain('Allergies');
+    });
+});
+
 describe('parseSSELine', function () {
     test('parses "data: token" (with space)', function () {
         expect(parseSSELine('data: hello')).toBe('hello');

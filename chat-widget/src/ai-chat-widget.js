@@ -33,13 +33,24 @@
         check: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>'
     };
 
+    function generateSessionId() {
+        return 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
+
     function getSessionId() {
         var key = 'ai_chat_session_id';
         var id = sessionStorage.getItem(key);
         if (!id) {
-            id = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            id = generateSessionId();
             sessionStorage.setItem(key, id);
         }
+        return id;
+    }
+
+    function resetSessionId() {
+        var key = 'ai_chat_session_id';
+        var id = generateSessionId();
+        sessionStorage.setItem(key, id);
         return id;
     }
 
@@ -269,6 +280,7 @@
         switch (toolName) {
             case 'find_appointments': return this._renderAppointments(data);
             case 'get_encounter_context': return this._renderEncounter(data);
+            case 'get_patient_summary': return this._renderPatientSummary(data);
             case 'draft_encounter_note': return this._renderDraftNote(data);
             case 'validate_claim_ready_completeness': return this._renderValidation(data);
             default:
@@ -354,6 +366,48 @@
         return html;
     };
 
+    AiChatWidget.prototype._renderPatientSummary = function (data) {
+        var html = '';
+        var i;
+        var p = data.patient || {};
+        html += '<div class="ai-chat-tr-row"><strong>' + escapeHtml(p.name || 'Patient') + '</strong>';
+        if (p.dob) { html += ' &middot; DOB ' + escapeHtml(p.dob); }
+        if (p.sex) { html += ' &middot; ' + escapeHtml(p.sex); }
+        if (p.mrn) { html += ' &middot; MRN ' + escapeHtml(p.mrn); }
+        html += '</div>';
+        var problems = data.active_problems || [];
+        if (problems.length) {
+            html += '<div class="ai-chat-tr-label">Active Problems</div><ul class="ai-chat-tr-list">';
+            for (i = 0; i < problems.length; i++) {
+                var prob = problems[i];
+                html += '<li>' + escapeHtml(prob.description || '') + (prob.code ? ' <span class="ai-chat-tr-code">' + escapeHtml(prob.code) + '</span>' : '') + '</li>';
+            }
+            html += '</ul>';
+        }
+        var meds = data.medications || [];
+        if (meds.length) {
+            html += '<div class="ai-chat-tr-label">Medications</div><ul class="ai-chat-tr-list">';
+            for (i = 0; i < meds.length; i++) {
+                var med = meds[i];
+                html += '<li>' + escapeHtml(med.drug_name || '') + (med.dose ? ' ' + escapeHtml(med.dose) : '') + (med.frequency ? ', ' + escapeHtml(med.frequency) : '') + '</li>';
+            }
+            html += '</ul>';
+        }
+        var allergies = data.allergies || [];
+        if (allergies.length) {
+            html += '<div class="ai-chat-tr-label">Allergies</div><ul class="ai-chat-tr-list">';
+            for (i = 0; i < allergies.length; i++) {
+                var al = allergies[i];
+                html += '<li>' + escapeHtml(al.substance || '') + (al.reaction ? ' &rarr; ' + escapeHtml(al.reaction) : '') + '</li>';
+            }
+            html += '</ul>';
+        }
+        if (data.data_warnings && data.data_warnings.length) {
+            html += '<div class="ai-chat-tr-warn">' + escapeHtml(data.data_warnings.join('; ')) + '</div>';
+        }
+        return html;
+    };
+
     AiChatWidget.prototype._renderDraftNote = function (data) {
         var html = '';
         var note = data.draft_note || {};
@@ -371,9 +425,10 @@
         } else if (note.full_text) {
             html += '<div class="ai-chat-tr-text">' + escapeHtml(note.full_text) + '</div>';
         }
-        if (data.warnings && data.warnings.length) {
-            for (var i = 0; i < data.warnings.length; i++) {
-                html += '<div class="ai-chat-tr-warn">' + escapeHtml(data.warnings[i]) + '</div>';
+        var warnings = (data.warnings || []).concat(data.data_warnings || []);
+        if (warnings.length) {
+            for (var i = 0; i < warnings.length; i++) {
+                html += '<div class="ai-chat-tr-warn">' + escapeHtml(warnings[i]) + '</div>';
             }
         }
         if (data.disclaimer) {
@@ -641,6 +696,9 @@
         // Clear DOM and state
         this.messagesEl.innerHTML = '';
         this.messages = [];
+
+        // Reset session so the backend starts a fresh thread
+        this.sessionId = resetSessionId();
 
         // Re-add welcome message
         this._addMessage('assistant', 'Hello! I can help you find appointments, look up patient information, and more. How can I assist you today?');

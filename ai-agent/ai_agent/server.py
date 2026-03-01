@@ -198,9 +198,7 @@ async def stream(req: ChatRequest):
                             name,
                             event.get("data"),
                         )
-                        payload = json.dumps(
-                            {"name": name, "content": "(error)"}
-                        )
+                        payload = json.dumps({"name": name, "content": "(error)"})
                         yield f"data: [tool_done]{payload}\n\n"
                     if name and output:
                         content = (

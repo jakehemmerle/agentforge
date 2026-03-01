@@ -190,6 +190,18 @@ async def stream(req: ChatRequest):
                     tool_depth = max(tool_depth - 1, 0)
                     name = event.get("name", "")
                     output = event.get("data", {}).get("output")
+                    if name and not output:
+                        # Tool errored — still notify the client so the
+                        # spinner is replaced with a status indicator.
+                        logger.warning(
+                            "on_tool_end for %s had no output; data=%s",
+                            name,
+                            event.get("data"),
+                        )
+                        payload = json.dumps(
+                            {"name": name, "content": "(error)"}
+                        )
+                        yield f"data: [tool_done]{payload}\n\n"
                     if name and output:
                         content = (
                             output.content

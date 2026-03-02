@@ -271,27 +271,44 @@ write_secret() {
     >/dev/null
 }
 
-# ---- ensure_oauth_keys ----------------------------------------------------
-# Wait for readyz, then probe the OAuth registration endpoint to verify that
-# filesystem crypto keys and DB keys are in sync.  If the probe returns a
-# "Security error" (encryption mismatch), wipe both sides and restart so
-# OpenEMR regenerates a matched set.
-ensure_oauth_keys() {
-  log "Waiting for OpenEMR readyz..."
-  local i
-  for i in $(seq 1 60); do
-    if curl -fsS "$OPENEMR_URL/meta/health/readyz" >/dev/null 2>&1; then
-      log "readyz responded on attempt $i"
-      break
+# ---- wait_for_install ------------------------------------------------------
+# Wait for OpenEMR to be fully installed (readyz installed=true).  The first
+# boot auto-setup can take a while on a fresh DB.  Returns 0 if installed,
+# 1 if timed out.
+OPENEMR_INSTALLED=false
+wait_for_install() {
+  if [ "$OPENEMR_INSTALLED" = "true" ]; then return 0; fi
+  log "Waiting for OpenEMR to be installed..."
+  local i readyz_json installed
+  for i in $(seq 1 90); do
+    readyz_json="$(curl -sS "$OPENEMR_URL/meta/health/readyz" 2>/dev/null || echo "{}")"
+    installed="$(echo "$readyz_json" | jq -r '.checks.installed // false')"
+    if [ "$installed" = "true" ]; then
+      log "OpenEMR installed (attempt $i)"
+      OPENEMR_INSTALLED=true
+      return 0
     fi
     sleep 5
   done
+  log "WARNING: OpenEMR not installed after 90 attempts"
+  return 1
+}
+
+# ---- ensure_oauth_keys ----------------------------------------------------
+# Probe the OAuth registration endpoint to verify filesystem crypto keys and
+# DB keys are in sync.  Only HTTP 500 indicates a key mismatch — other codes
+# mean the API isn't ready yet (not a key issue).
+ensure_oauth_keys() {
+  if ! wait_for_install; then
+    log "Skipping key probe — OpenEMR not installed"
+    return 0
+  fi
 
   local attempt
   for attempt in 1 2 3; do
     log "Probe attempt $attempt: testing OAuth registration endpoint..."
 
-    local probe_resp probe_http
+    local probe_resp
     probe_resp="$(curl -sS -o /dev/null -w '%{http_code}' \
       -X POST "$OPENEMR_URL/oauth2/default/registration" \
       -H 'Content-Type: application/json' \
@@ -305,7 +322,14 @@ ensure_oauth_keys() {
       return 0
     fi
 
-    log "Probe failed (HTTP $probe_resp) — clearing keys and restarting OpenEMR..."
+    # Only treat 500 as a key mismatch.  Other codes (404, 400, etc.)
+    # mean the API isn't ready or the request is malformed — not a key issue.
+    if [ "$probe_resp" != "500" ]; then
+      log "Probe returned HTTP $probe_resp (not 500) — not a key mismatch, skipping healing"
+      return 0
+    fi
+
+    log "Probe returned HTTP 500 — clearing keys and restarting OpenEMR..."
 
     # Clear DB crypto keys
     run_sql "DELETE FROM \`keys\`" || log "WARNING: failed to clear keys table"
@@ -334,6 +358,10 @@ ensure_oauth_keys() {
 # client, enable it, write the credentials to Secret Manager, update the .env,
 # and restart the ai-agent container.
 ensure_oauth_client() {
+  if ! wait_for_install; then
+    log "Skipping OAuth client check — OpenEMR not installed"
+    return 0
+  fi
   log "Checking OAuth client credentials..."
 
   # Fast path: test existing credentials

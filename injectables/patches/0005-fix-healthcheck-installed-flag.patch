@@ -1,0 +1,31 @@
+diff --git a/src/Health/Check/InstallationCheck.php b/src/Health/Check/InstallationCheck.php
+index 549f653f3..d82990f5f 100644
+--- a/src/Health/Check/InstallationCheck.php
++++ b/src/Health/Check/InstallationCheck.php
+@@ -27,17 +27,21 @@ class InstallationCheck implements HealthCheckInterface
+     public function check(): HealthCheckResult
+     {
+         try {
+-            // The $config variable is set in sqlconf.php
+-            // $config = 0 means not installed, $config = 1 means installed
+-            global $config;
+-
+-            if (!isset($config)) {
++            // Re-read sqlconf.php directly because interface/globals.php
++            // overwrites the global $config variable with a
++            // DatabaseConnectionOptions object after bootstrap.
++            // Using include (not require_once) so it re-evaluates even if
++            // already loaded, and function scope keeps $config local.
++            $config = 0;
++            $sqlconfPath = ($GLOBALS['OE_SITE_DIR'] ?? '') . "/sqlconf.php";
++            if (!file_exists($sqlconfPath)) {
+                 return new HealthCheckResult(
+                     $this->getName(),
+                     false,
+                     'Configuration not loaded'
+                 );
+             }
++            include $sqlconfPath;
+ 
+             if ($config !== 1) {
+                 return new HealthCheckResult(

@@ -45,6 +45,7 @@ COPY openemr/interface/main/tabs/main.php /var/www/localhost/htdocs/openemr/inte
 COPY openemr/interface/main/tabs/js/ai-chat-widget.js /var/www/localhost/htdocs/openemr/interface/main/tabs/js/
 COPY openemr/interface/main/tabs/css/ai-chat-widget.css /var/www/localhost/htdocs/openemr/interface/main/tabs/css/
 COPY openemr/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php /var/www/localhost/htdocs/openemr/src/Common/Auth/OpenIDConnect/Repositories/UserRepository.php
+COPY openemr/src/Health/Check/InstallationCheck.php /var/www/localhost/htdocs/openemr/src/Health/Check/InstallationCheck.php
 
 # Replace the flex entrypoint with our custom entrypoint.
 # See docker-entrypoint.sh for details on why we can't use the flex entrypoint.

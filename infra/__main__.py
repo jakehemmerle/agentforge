@@ -29,7 +29,7 @@ region = gcp_config.require("region")
 # NOTE: keep fallback for backward compatibility with existing stack state.
 # Set `dbPassword` as a Pulumi secret in all environments.
 db_password = config.get_secret("dbPassword") or pulumi.Output.secret("change-me-on-first-deploy")
-db_tier = config.get("dbTier") or "db-g1-small"
+db_tier = config.get("dbTier") or "db-n1-standard-1"
 
 # Compute Engine
 vm_name = config.get("vmName") or "openemr-staging-vm"

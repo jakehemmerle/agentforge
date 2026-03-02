@@ -79,8 +79,12 @@ fi
 # The database is the only source of truth for whether setup has been done.
 DB_READY=false
 for attempt in $(seq 1 30); do
-    if mysql ${MYSQL_SSL_OPT} -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASS}" \
-             "${MYSQL_DATABASE}" -e "SELECT 1 FROM users LIMIT 1" 2>/dev/null; then
+    # Check that the users table exists AND has at least one row.
+    # An empty users table means auto_configure created the schema but
+    # data insertion failed — the DB needs to be re-initialized.
+    ROW_COUNT="$(mysql ${MYSQL_SSL_OPT} -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASS}" \
+             "${MYSQL_DATABASE}" -sNe "SELECT COUNT(*) FROM users" 2>/dev/null || echo "")"
+    if [ -n "$ROW_COUNT" ] && [ "$ROW_COUNT" -gt 0 ] 2>/dev/null; then
         DB_READY=true
         break
     fi
@@ -136,6 +140,16 @@ else
     fi
 
     cd "$OE_ROOT"
+
+    # Drop all existing tables if any (handles half-initialized state where
+    # tables were created but data insertion failed).
+    TABLES="$(mysql ${MYSQL_SSL_OPT} -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASS}" \
+             "${MYSQL_DATABASE}" -sNe "SHOW TABLES" 2>/dev/null || true)"
+    if [ -n "$TABLES" ]; then
+        echo "Cleaning up partial initialization ($(echo "$TABLES" | wc -l) tables)..."
+        mysql ${MYSQL_SSL_OPT} -h"${MYSQL_HOST}" -P"${MYSQL_PORT}" -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASS}" \
+             "${MYSQL_DATABASE}" -e "SET FOREIGN_KEY_CHECKS=0; $(echo "$TABLES" | sed 's/.*/DROP TABLE IF EXISTS \`&\`;/') SET FOREIGN_KEY_CHECKS=1;" 2>/dev/null || true
+    fi
 
     # Ensure sqlconf.php is writable for the installer
     chmod 666 "$SQLCONF" 2>/dev/null || true

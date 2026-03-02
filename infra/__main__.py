@@ -173,6 +173,18 @@ for secret_name, secret in secrets.items():
         )
     )
 
+# Grant write access (addVersion) for secrets the VM self-healing may update.
+WRITABLE_SECRETS = ["OPENEMR_CLIENT_ID", "OPENEMR_CLIENT_SECRET"]
+for secret_name in WRITABLE_SECRETS:
+    vm_secret_iam_members.append(
+        gcp.secretmanager.SecretIamMember(
+            f"openemr-vm-secret-write-{secret_name.lower().replace('_', '-')}",
+            secret_id=secrets[secret_name].id,
+            role="roles/secretmanager.secretVersionAdder",
+            member=vm_service_account.email.apply(lambda email: f"serviceAccount:{email}"),
+        )
+    )
+
 # ---------------------------------------------------------------------------
 # Compute Engine networking
 # ---------------------------------------------------------------------------

@@ -230,3 +230,180 @@ docker compose --env-file /opt/openemr/.env -f /opt/openemr/docker-compose.yml p
 docker compose --env-file /opt/openemr/.env -f /opt/openemr/docker-compose.yml up -d --remove-orphans
 
 docker image prune -f || true
+
+# ---------------------------------------------------------------------------
+# Self-healing: detect and fix crypto key / OAuth credential mismatches
+# ---------------------------------------------------------------------------
+# Disable strict error handling — self-healing is best-effort; containers
+# should stay running even if healing fails so CI can report the real error.
+set +e
+
+DC="docker compose --env-file /opt/openemr/.env -f /opt/openemr/docker-compose.yml"
+
+log() { echo "[self-heal] $(date '+%H:%M:%S') $*"; }
+
+OPENEMR_URL="http://localhost"
+PROBE_CLIENT_NAME="openemr-ai-agent-probe"
+CLIENT_NAME="openemr-ai-agent"
+OAUTH_SCOPES="openid api:oemr user/appointment.read user/encounter.read user/patient.read user/insurance.read user/vital.read user/soap_note.read user/AllergyIntolerance.read user/Condition.read user/MedicationRequest.read"
+
+CERT_DIR="$DATA_ROOT/openemr-site/documents/certificates"
+METHODS_DIR="$DATA_ROOT/openemr-site/documents/logs_and_misc/methods"
+
+# MySQL helper — runs SQL against the openemr database via the OpenEMR container
+# (which has the mysql/mariadb client installed).
+run_sql() {
+  $DC exec -T openemr sh -c \
+    "mysql -h cloud-sql-proxy -u openemr -p'${DB_PASSWORD}' openemr -sNe \"$1\"" 2>/dev/null
+}
+
+# Write a secret version to Secret Manager via REST API.
+write_secret() {
+  local secret_name="$1" value="$2"
+  local token payload
+  token="$(get_access_token)"
+  payload="$(printf '%s' "$value" | base64 -w0)"
+  curl -fsS -X POST \
+    -H "Authorization: Bearer $token" \
+    -H "Content-Type: application/json" \
+    -d "{\"payload\":{\"data\":\"$payload\"}}" \
+    "https://secretmanager.googleapis.com/v1/projects/${PROJECT_ID}/secrets/${secret_name}:addVersion" \
+    >/dev/null
+}
+
+# ---- ensure_oauth_keys ----------------------------------------------------
+# Wait for readyz, then probe the OAuth registration endpoint to verify that
+# filesystem crypto keys and DB keys are in sync.  If the probe returns a
+# "Security error" (encryption mismatch), wipe both sides and restart so
+# OpenEMR regenerates a matched set.
+ensure_oauth_keys() {
+  log "Waiting for OpenEMR readyz..."
+  local i
+  for i in $(seq 1 60); do
+    if curl -fsS "$OPENEMR_URL/meta/health/readyz" >/dev/null 2>&1; then
+      log "readyz responded on attempt $i"
+      break
+    fi
+    sleep 5
+  done
+
+  local attempt
+  for attempt in 1 2 3; do
+    log "Probe attempt $attempt: testing OAuth registration endpoint..."
+
+    local probe_resp probe_http
+    probe_resp="$(curl -sS -o /dev/null -w '%{http_code}' \
+      -X POST "$OPENEMR_URL/oauth2/default/registration" \
+      -H 'Content-Type: application/json' \
+      -d "{\"application_type\":\"private\",\"client_name\":\"$PROBE_CLIENT_NAME\",\"redirect_uris\":[\"https://localhost\"],\"scope\":\"$OAUTH_SCOPES\"}" \
+      2>/dev/null || echo "000")"
+
+    if [ "$probe_resp" = "200" ] || [ "$probe_resp" = "201" ]; then
+      log "Probe succeeded (HTTP $probe_resp) — keys are consistent"
+      # Clean up probe client from DB
+      run_sql "DELETE FROM oauth_clients WHERE client_name='$PROBE_CLIENT_NAME'" || true
+      return 0
+    fi
+
+    log "Probe failed (HTTP $probe_resp) — clearing keys and restarting OpenEMR..."
+
+    # Clear DB crypto keys
+    run_sql "DELETE FROM \`keys\`" || log "WARNING: failed to clear keys table"
+
+    # Clear drive crypto keys
+    rm -f "$CERT_DIR/oaprivate.key" "$CERT_DIR/oapublic.key" 2>/dev/null || true
+    # Clear all method key files (sevena, sevenb, etc.)
+    find "$METHODS_DIR" -type f -delete 2>/dev/null || true
+
+    # Restart OpenEMR to regenerate fresh matched keys
+    $DC restart openemr
+    log "Waiting for OpenEMR to come back..."
+    for i in $(seq 1 60); do
+      if curl -fsS "$OPENEMR_URL/meta/health/readyz" >/dev/null 2>&1; then
+        break
+      fi
+      sleep 5
+    done
+  done
+
+  log "WARNING: OAuth key healing failed after 3 attempts — continuing anyway"
+}
+
+# ---- ensure_oauth_client ---------------------------------------------------
+# Verify the AI-agent's OAuth client credentials work.  If not, register a new
+# client, enable it, write the credentials to Secret Manager, update the .env,
+# and restart the ai-agent container.
+ensure_oauth_client() {
+  log "Checking OAuth client credentials..."
+
+  # Fast path: test existing credentials
+  if [ -n "$OPENEMR_CLIENT_ID" ] && [ -n "$OPENEMR_CLIENT_SECRET" ]; then
+    local token_resp
+    token_resp="$(curl -sS -X POST "$OPENEMR_URL/oauth2/default/token" \
+      -d "grant_type=password&username=admin&password=pass&client_id=$OPENEMR_CLIENT_ID&client_secret=$OPENEMR_CLIENT_SECRET&scope=$OAUTH_SCOPES&user_role=users" \
+      2>/dev/null || echo "{}")"
+    if echo "$token_resp" | jq -e '.access_token' >/dev/null 2>&1; then
+      log "Existing OAuth credentials are valid — skipping registration"
+      return 0
+    fi
+    log "Existing credentials failed — re-registering"
+  else
+    log "No OAuth credentials found — registering new client"
+  fi
+
+  # Register a new OAuth client
+  local reg_resp
+  reg_resp="$(curl -sS -X POST "$OPENEMR_URL/oauth2/default/registration" \
+    -H 'Content-Type: application/json' \
+    -d "{\"application_type\":\"private\",\"client_name\":\"$CLIENT_NAME\",\"redirect_uris\":[\"https://localhost\"],\"scope\":\"$OAUTH_SCOPES\"}" \
+    2>/dev/null || echo "{}")"
+
+  local new_client_id new_client_secret
+  new_client_id="$(echo "$reg_resp" | jq -r '.client_id // empty')"
+  new_client_secret="$(echo "$reg_resp" | jq -r '.client_secret // empty')"
+
+  if [ -z "$new_client_id" ] || [ -z "$new_client_secret" ]; then
+    log "WARNING: OAuth client registration failed — response: $reg_resp"
+    return 1
+  fi
+  log "Registered OAuth client: ${new_client_id:0:20}..."
+
+  # Enable the client (new registrations default to disabled)
+  run_sql "UPDATE oauth_clients SET is_enabled=1 WHERE client_name='$CLIENT_NAME'" \
+    || log "WARNING: failed to enable OAuth client"
+
+  # Write new credentials to Secret Manager
+  write_secret "OPENEMR_CLIENT_ID" "$new_client_id" \
+    && log "Wrote OPENEMR_CLIENT_ID to Secret Manager" \
+    || log "WARNING: failed to write OPENEMR_CLIENT_ID to Secret Manager"
+  write_secret "OPENEMR_CLIENT_SECRET" "$new_client_secret" \
+    && log "Wrote OPENEMR_CLIENT_SECRET to Secret Manager" \
+    || log "WARNING: failed to write OPENEMR_CLIENT_SECRET to Secret Manager"
+
+  # Update local .env and restart ai-agent
+  OPENEMR_CLIENT_ID="$new_client_id"
+  OPENEMR_CLIENT_SECRET="$new_client_secret"
+  sed -i "s|^OPENEMR_CLIENT_ID=.*|OPENEMR_CLIENT_ID=${new_client_id}|" /opt/openemr/.env
+  sed -i "s|^OPENEMR_CLIENT_SECRET=.*|OPENEMR_CLIENT_SECRET=${new_client_secret}|" /opt/openemr/.env
+
+  $DC restart ai-agent
+  log "Restarted ai-agent with new credentials"
+
+  # Validate new credentials
+  sleep 5
+  local validate_resp
+  validate_resp="$(curl -sS -X POST "$OPENEMR_URL/oauth2/default/token" \
+    -d "grant_type=password&username=admin&password=pass&client_id=$new_client_id&client_secret=$new_client_secret&scope=$OAUTH_SCOPES&user_role=users" \
+    2>/dev/null || echo "{}")"
+  if echo "$validate_resp" | jq -e '.access_token' >/dev/null 2>&1; then
+    log "New OAuth credentials validated successfully"
+    return 0
+  fi
+
+  log "WARNING: New OAuth credentials failed validation"
+  return 1
+}
+
+ensure_oauth_keys || log "WARNING: ensure_oauth_keys did not fully succeed"
+ensure_oauth_client || log "WARNING: ensure_oauth_client did not fully succeed"
+log "Self-healing complete"

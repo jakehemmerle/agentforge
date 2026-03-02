@@ -132,7 +132,7 @@ jobs:
           echo "AI Agent URL: $AGENT_URL"
           echo "AI Agent Health URL: $AGENT_HEALTH_URL"
 
-          for attempt in $(seq 1 90); do
+          for attempt in $(seq 1 180); do
             READYZ_JSON="$(curl -fsS "$OPENEMR_URL/meta/health/readyz" || true)"
             AGENT_OK=0
             READYZ_OK=0
@@ -151,7 +151,7 @@ jobs:
               exit 0
             fi
 
-            echo "Waiting for services (attempt $attempt/90)..."
+            echo "Waiting for services (attempt $attempt/180)..."
             sleep 10
           done
 

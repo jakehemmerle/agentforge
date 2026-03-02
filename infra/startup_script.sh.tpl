@@ -280,7 +280,7 @@ wait_for_install() {
   if [ "$OPENEMR_INSTALLED" = "true" ]; then return 0; fi
   log "Waiting for OpenEMR to be installed..."
   local i readyz_json installed
-  for i in $(seq 1 90); do
+  for i in $(seq 1 180); do
     readyz_json="$(curl -sS "$OPENEMR_URL/meta/health/readyz" 2>/dev/null || echo "{}")"
     installed="$(echo "$readyz_json" | jq -r '.checks.installed // false')"
     if [ "$installed" = "true" ]; then
@@ -288,9 +288,9 @@ wait_for_install() {
       OPENEMR_INSTALLED=true
       return 0
     fi
-    sleep 5
+    sleep 10
   done
-  log "WARNING: OpenEMR not installed after 90 attempts"
+  log "WARNING: OpenEMR not installed after 180 attempts"
   return 1
 }
 
